@@ -11,6 +11,18 @@ class SettingController extends Controller
 {
     public function index()
     {
+        // Auto-heal any legacy demo placeholders in database
+        $legacyDummy = Setting::where('key', 'mail_username')->where('value', 'demo_smtp_user')->first();
+        if ($legacyDummy) {
+            Setting::set('mail_username', config('mail.mailers.smtp.username', 'mawthiqtr@gmail.com'), 'string', 'email');
+            Setting::set('mail_password', config('mail.mailers.smtp.password', 'Shaza@2020'), 'string', 'email');
+            Setting::set('mail_host', config('mail.mailers.smtp.host', 'smtp.gmail.com'), 'string', 'email');
+            Setting::set('mail_port', (string) config('mail.mailers.smtp.port', '587'), 'string', 'email');
+            Setting::set('mail_encryption', config('mail.mailers.smtp.encryption', 'tls'), 'string', 'email');
+            Setting::set('mail_from_address', config('mail.from.address', 'mawthiqtr@gmail.com'), 'string', 'email');
+            Setting::set('mail_from_name', config('mail.from.name', 'منصة إدارة المتقدمين والمساهمين'), 'string', 'email');
+        }
+
         $settings = Setting::all()->groupBy('group');
 
         return response()->json([

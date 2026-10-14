@@ -144,13 +144,19 @@ class DatabaseSeeder extends Seeder
                 'type' => 'json',
                 'group' => 'recruitment'
             ],
-            'mail_mailer' => ['value' => 'smtp', 'type' => 'string', 'group' => 'email'],
-            'mail_host' => ['value' => 'smtp.mailtrap.io', 'type' => 'string', 'group' => 'email'],
-            'mail_port' => ['value' => '2525', 'type' => 'string', 'group' => 'email'],
-            'mail_username' => ['value' => 'demo_smtp_user', 'type' => 'string', 'group' => 'email'],
-            'mail_password' => ['value' => 'demo_secret_pass', 'type' => 'string', 'group' => 'email'],
-            'mail_from_address' => ['value' => 'recruitment@contributors.app', 'type' => 'string', 'group' => 'email'],
-            'mail_from_name' => ['value' => 'فريق الاستقطاب والمساهمين', 'type' => 'string', 'group' => 'email'],
+            'mail_mailer' => ['value' => env('MAIL_MAILER', 'smtp'), 'type' => 'string', 'group' => 'email'],
+            'mail_host' => ['value' => env('MAIL_HOST', 'smtp.gmail.com'), 'type' => 'string', 'group' => 'email'],
+            'mail_port' => ['value' => (string) env('MAIL_PORT', '587'), 'type' => 'string', 'group' => 'email'],
+            'mail_encryption' => ['value' => env('MAIL_ENCRYPTION', 'tls'), 'type' => 'string', 'group' => 'email'],
+            'mail_username' => ['value' => env('MAIL_USERNAME', 'mawthiqtr@gmail.com'), 'type' => 'string', 'group' => 'email'],
+            'mail_password' => ['value' => env('MAIL_PASSWORD', 'Shaza@2020'), 'type' => 'string', 'group' => 'email'],
+            'mail_from_address' => ['value' => env('MAIL_FROM_ADDRESS', 'mawthiqtr@gmail.com'), 'type' => 'string', 'group' => 'email'],
+            'mail_from_name' => ['value' => env('MAIL_FROM_NAME', 'منصة إدارة المتقدمين والمساهمين'), 'type' => 'string', 'group' => 'email'],
+            'imap_host' => ['value' => env('IMAP_HOST', 'imap.gmail.com'), 'type' => 'string', 'group' => 'email'],
+            'imap_port' => ['value' => (string) env('IMAP_PORT', '993'), 'type' => 'string', 'group' => 'email'],
+            'imap_encryption' => ['value' => env('IMAP_ENCRYPTION', 'ssl'), 'type' => 'string', 'group' => 'email'],
+            'imap_username' => ['value' => env('IMAP_USERNAME', env('MAIL_USERNAME', 'mawthiqtr@gmail.com')), 'type' => 'string', 'group' => 'email'],
+            'imap_password' => ['value' => env('IMAP_PASSWORD', env('MAIL_PASSWORD', 'Shaza@2020')), 'type' => 'string', 'group' => 'email'],
         ];
 
         foreach ($settings as $key => $data) {

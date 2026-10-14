@@ -17,14 +17,29 @@ class MailService
      */
     public static function applyMailConfig(): array
     {
-        $mailer = Setting::get('mail_mailer', config('mail.default', 'smtp'));
-        $host = Setting::get('mail_host', config('mail.mailers.smtp.host', 'smtp.gmail.com'));
-        $port = (int) Setting::get('mail_port', config('mail.mailers.smtp.port', 587));
-        $encryption = Setting::get('mail_encryption', config('mail.mailers.smtp.encryption', 'tls'));
-        $username = Setting::get('mail_username', config('mail.mailers.smtp.username', 'mawthiqtr@gmail.com'));
-        $password = Setting::get('mail_password', config('mail.mailers.smtp.password', 'Shaza@2020'));
-        $fromAddress = Setting::get('mail_from_address', config('mail.from.address', 'mawthiqtr@gmail.com'));
-        $fromName = Setting::get('mail_from_name', config('mail.from.name', 'Contributors Platform'));
+        $dbMailer = Setting::get('mail_mailer');
+        $mailer = (!empty($dbMailer) && $dbMailer !== 'mailtrap') ? $dbMailer : config('mail.default', 'smtp');
+
+        $dbHost = Setting::get('mail_host');
+        $host = (!empty($dbHost) && $dbHost !== 'smtp.mailtrap.io') ? $dbHost : config('mail.mailers.smtp.host', 'smtp.gmail.com');
+
+        $dbPort = Setting::get('mail_port');
+        $port = (!empty($dbPort) && (int)$dbPort !== 2525) ? (int)$dbPort : (int)config('mail.mailers.smtp.port', 587);
+
+        $dbEncryption = Setting::get('mail_encryption');
+        $encryption = !empty($dbEncryption) ? $dbEncryption : config('mail.mailers.smtp.encryption', 'tls');
+
+        $dbUsername = Setting::get('mail_username');
+        $username = (!empty($dbUsername) && $dbUsername !== 'demo_smtp_user') ? $dbUsername : config('mail.mailers.smtp.username', 'mawthiqtr@gmail.com');
+
+        $dbPassword = Setting::get('mail_password');
+        $password = (!empty($dbPassword) && $dbPassword !== 'demo_secret_pass') ? $dbPassword : config('mail.mailers.smtp.password', 'Shaza@2020');
+
+        $dbFromAddress = Setting::get('mail_from_address');
+        $fromAddress = (!empty($dbFromAddress) && $dbFromAddress !== 'recruitment@contributors.app') ? $dbFromAddress : config('mail.from.address', 'mawthiqtr@gmail.com');
+
+        $dbFromName = Setting::get('mail_from_name');
+        $fromName = !empty($dbFromName) ? $dbFromName : config('mail.from.name', 'منصة إدارة المتقدمين والمساهمين');
 
         Config::set('mail.default', $mailer);
         Config::set('mail.mailers.smtp.transport', 'smtp');
@@ -95,8 +110,8 @@ class MailService
         } catch (Exception $e) {
             $errorMessage = $e->getMessage();
             $friendlyNote = '';
-            if (str_contains($errorMessage, 'Application-specific password required') || str_contains($errorMessage, '534')) {
-                $friendlyNote = ' (تنبيه Google: حساب Gmail هذا مفعل به التحقق بخطوتين 2FA، وتشترط Google إنشاء "كلمة مرور تطبيقات App Password" من 16 حرفاً من إعدادات حساب Google لوضعها في خانة كلمة المرور بدلاً من كلمة المرور العادية).';
+            if (str_contains($errorMessage, 'Application-specific password required') || str_contains($errorMessage, '534') || str_contains($errorMessage, 'InvalidSecondFactor') || str_contains($errorMessage, '535 5.7.8') || str_contains($errorMessage, '535')) {
+                $friendlyNote = ' (تنبيه Google: نظراً لتفعيل التحقق بخطوتين 2FA في حسابات Gmail، ترفض Google كلمة المرور العادية عبر SMTP وتشترط إنشاء "كلمة مرور تطبيقات App Password" مكونة من 16 حرفاً من: https://myaccount.google.com/apppasswords ووضعها في خانة كلمة المرور).';
             }
 
             $displayMessage = 'فشل إرسال البريد عبر الخادم: ' . $errorMessage . $friendlyNote;
@@ -129,11 +144,22 @@ class MailService
             ];
         }
 
-        $host = Setting::get('imap_host', 'imap.gmail.com');
-        $port = Setting::get('imap_port', 993);
+        $dbHost = Setting::get('imap_host');
+        $host = (!empty($dbHost) && $dbHost !== 'imap.mailtrap.io') ? $dbHost : 'imap.gmail.com';
+        $port = (int) Setting::get('imap_port', 993);
         $encryption = Setting::get('imap_encryption', 'ssl');
-        $username = Setting::get('imap_username', Setting::get('mail_username', 'mawthiqtr@gmail.com'));
-        $password = Setting::get('imap_password', Setting::get('mail_password', 'Shaza@2020'));
+
+        $dbUser = Setting::get('imap_username');
+        $username = (!empty($dbUser) && $dbUser !== 'demo_smtp_user') ? $dbUser : Setting::get('mail_username');
+        if (empty($username) || $username === 'demo_smtp_user') {
+            $username = config('mail.mailers.smtp.username', 'mawthiqtr@gmail.com');
+        }
+
+        $dbPass = Setting::get('imap_password');
+        $password = (!empty($dbPass) && $dbPass !== 'demo_secret_pass') ? $dbPass : Setting::get('mail_password');
+        if (empty($password) || $password === 'demo_secret_pass') {
+            $password = config('mail.mailers.smtp.password', 'Shaza@2020');
+        }
 
         $flags = "/imap/{$encryption}/novalidate-cert";
         $mailbox = "{" . "{$host}:{$port}{$flags}" . "}INBOX";
