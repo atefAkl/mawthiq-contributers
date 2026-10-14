@@ -1,0 +1,108 @@
+<?php
+
+use App\Http\Controllers\Api\ApplicantController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EmailController;
+use App\Http\Controllers\Api\InterviewController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PublicApplyController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\UserController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Public API Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+});
+
+Route::prefix('public')->group(function () {
+    Route::get('/config', [PublicApplyController::class, 'getConfig']);
+    Route::post('/apply', [PublicApplyController::class, 'apply']);
+});
+
+Route::get('/applicants/export', [ApplicantController::class, 'export']);
+
+/*
+|--------------------------------------------------------------------------
+| Protected Authenticated Routes (Sanctum)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth & Active User Profile
+    Route::prefix('auth')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+    });
+
+    // Notifications (Flash / Bell)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllRead']);
+    });
+
+    // Reports & Statistics
+    Route::prefix('reports')->group(function () {
+        Route::get('/dashboard', [ReportController::class, 'getDashboardStats']);
+    });
+
+    // Applicants Management & Status/Promotion
+    Route::prefix('applicants')->group(function () {
+        Route::get('/', [ApplicantController::class, 'index']);
+        Route::post('/', [ApplicantController::class, 'store']);
+        Route::get('/{id}', [ApplicantController::class, 'show']);
+        Route::put('/{id}', [ApplicantController::class, 'update']);
+        Route::delete('/{id}', [ApplicantController::class, 'destroy']);
+        Route::post('/{id}/status', [ApplicantController::class, 'updateStatus']);
+        Route::post('/{id}/resume', [ApplicantController::class, 'uploadResume']);
+    });
+
+    // Interviews & Evaluation Results
+    Route::prefix('interviews')->group(function () {
+        Route::get('/', [InterviewController::class, 'index']);
+        Route::post('/', [InterviewController::class, 'store']);
+        Route::get('/{id}', [InterviewController::class, 'show']);
+        Route::put('/{id}', [InterviewController::class, 'update']);
+        Route::delete('/{id}', [InterviewController::class, 'destroy']);
+        Route::post('/{id}/result', [InterviewController::class, 'recordResult']);
+        Route::post('/{id}/questions', [InterviewController::class, 'updateQuestions']);
+    });
+
+    // Send and Receive Emails
+    Route::prefix('emails')->group(function () {
+        Route::get('/', [EmailController::class, 'index']);
+        Route::post('/send', [EmailController::class, 'send']);
+        Route::post('/simulate-reply', [EmailController::class, 'simulateReceiveReply']);
+        Route::post('/sync-imap', [EmailController::class, 'syncImap']);
+        Route::post('/inbound', [EmailController::class, 'inbound']);
+        Route::get('/templates', [EmailController::class, 'getTemplates']);
+    });
+
+    // User Management & RBAC
+    Route::prefix('users')->group(function () {
+        Route::get('/', [UserController::class, 'index']);
+        Route::post('/', [UserController::class, 'store']);
+        Route::put('/{id}', [UserController::class, 'update']);
+        Route::delete('/{id}', [UserController::class, 'destroy']);
+    });
+
+    Route::prefix('roles')->group(function () {
+        Route::get('/', [RoleController::class, 'index']);
+        Route::put('/{id}/permissions', [RoleController::class, 'updatePermissions']);
+    });
+
+    // General & System Settings
+    Route::prefix('settings')->group(function () {
+        Route::get('/', [SettingController::class, 'index']);
+        Route::post('/', [SettingController::class, 'update']);
+        Route::post('/test-email', [SettingController::class, 'testEmail']);
+    });
+});
