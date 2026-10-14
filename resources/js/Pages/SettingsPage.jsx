@@ -21,6 +21,7 @@ export default function SettingsPage({ currentRoute, navigate }) {
     // Test Email
     const [testEmailAddress, setTestEmailAddress] = useState('admin@example.com');
     const [testingEmail, setTestingEmail] = useState(false);
+    const [syncingImap, setSyncingImap] = useState(false);
 
     const loadSettings = async () => {
         setLoading(true);
@@ -97,6 +98,18 @@ export default function SettingsPage({ currentRoute, navigate }) {
             showToast(err.message || 'فشل اختبار البريد.', 'error');
         } finally {
             setTestingEmail(false);
+        }
+    };
+
+    const handleSyncImap = async () => {
+        setSyncingImap(true);
+        try {
+            const res = await api.post('/emails/sync-imap');
+            showToast(res.message || 'تم فحص صندوق الوارد بنجاح!', res.success ? 'success' : 'warning');
+        } catch (err) {
+            showToast(err.message || 'فشل فحص صندوق الوارد IMAP.', 'error');
+        } finally {
+            setSyncingImap(false);
         }
     };
 
