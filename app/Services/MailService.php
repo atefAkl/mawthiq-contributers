@@ -109,11 +109,41 @@ class MailService
             'sent_by' => $userId,
         ]);
 
+        $htmlContent = '
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { font-family: "Segoe UI", Tahoma, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; line-height: 1.6; }
+                .card { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+                .header { background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%); color: #ffffff; padding: 24px 28px; }
+                .header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+                .content { padding: 28px; font-size: 14px; color: #334155; line-height: 1.7; }
+                .footer { padding: 18px 28px; background: #f8fafc; border-top: 1px solid #f1f5f9; font-size: 11px; color: #64748b; text-align: center; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="header">
+                    <h1>' . htmlspecialchars($fromName) . '</h1>
+                </div>
+                <div class="content">
+                    ' . nl2br(htmlspecialchars($body)) . '
+                </div>
+                <div class="footer">
+                    هذه رسالة آلية صادرة من ' . htmlspecialchars($fromName) . ' &bull; mawthiq.tech
+                </div>
+            </div>
+        </body>
+        </html>';
+
         try {
-            Mail::raw($body, function ($message) use ($recipientEmail, $subject, $senderEmail, $fromName) {
+            Mail::html($htmlContent, function ($message) use ($recipientEmail, $subject, $senderEmail, $fromName, $body) {
                 $message->to($recipientEmail)
                         ->from($senderEmail, $fromName)
-                        ->subject($subject);
+                        ->subject($subject)
+                        ->text($body);
             });
 
             $emailLog->update(['status' => 'delivered']);
