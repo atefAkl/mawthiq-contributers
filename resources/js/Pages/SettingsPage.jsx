@@ -92,6 +92,13 @@ export default function SettingsPage({ currentRoute, navigate }) {
         e.preventDefault();
         setTestingEmail(true);
         try {
+            // Auto-save current form settings before testing
+            const payload = {
+                ...settings,
+                allowed_positions: JSON.stringify(positions),
+            };
+            await api.post('/settings', { settings: payload });
+
             await api.post('/settings/test-email', { test_email: testEmailAddress });
             showToast(`تم إرسال رسالة الاختبار بنجاح إلى (${testEmailAddress})!`, 'success');
         } catch (err) {
@@ -104,6 +111,13 @@ export default function SettingsPage({ currentRoute, navigate }) {
     const handleSyncImap = async () => {
         setSyncingImap(true);
         try {
+            // Auto-save current form settings before syncing
+            const payload = {
+                ...settings,
+                allowed_positions: JSON.stringify(positions),
+            };
+            await api.post('/settings', { settings: payload });
+
             const res = await api.post('/emails/sync-imap');
             showToast(res.message || 'تم فحص صندوق الوارد بنجاح!', res.success ? 'success' : 'warning');
         } catch (err) {
