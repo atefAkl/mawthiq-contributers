@@ -22,6 +22,9 @@ class MailService
 
         $dbHost = Setting::get('mail_host');
         $host = (!empty($dbHost) && $dbHost !== 'smtp.mailtrap.io') ? $dbHost : config('mail.mailers.smtp.host', 'smtp.gmail.com');
+        if ($host === 'mail.mawthiq.tech') {
+            $host = 'mawthiq.tech';
+        }
 
         $dbPort = Setting::get('mail_port');
         $port = (!empty($dbPort) && (int)$dbPort !== 2525) ? (int)$dbPort : (int)config('mail.mailers.smtp.port', 587);
@@ -31,12 +34,18 @@ class MailService
 
         $dbUsername = Setting::get('mail_username');
         $username = (!empty($dbUsername) && $dbUsername !== 'demo_smtp_user') ? $dbUsername : config('mail.mailers.smtp.username', 'mawthiqtr@gmail.com');
+        if ($username === 'dmin@mawthiq.tech') {
+            $username = 'admin@mawthiq.tech';
+        }
 
         $dbPassword = Setting::get('mail_password');
         $password = (!empty($dbPassword) && $dbPassword !== 'demo_secret_pass') ? $dbPassword : config('mail.mailers.smtp.password', 'Shaza@2020');
 
         $dbFromAddress = Setting::get('mail_from_address');
         $fromAddress = (!empty($dbFromAddress) && $dbFromAddress !== 'recruitment@contributors.app') ? $dbFromAddress : config('mail.from.address', 'mawthiqtr@gmail.com');
+        if ($fromAddress === 'dmin@mawthiq.tech') {
+            $fromAddress = 'admin@mawthiq.tech';
+        }
 
         $dbFromName = Setting::get('mail_from_name');
         $fromName = !empty($dbFromName) ? $dbFromName : config('mail.from.name', 'منصة إدارة المتقدمين والمساهمين');
@@ -49,6 +58,13 @@ class MailService
         Config::set('mail.mailers.smtp.scheme', ($encryption === 'ssl' || $port === 465) ? 'smtps' : null);
         Config::set('mail.mailers.smtp.username', $username);
         Config::set('mail.mailers.smtp.password', $password);
+        Config::set('mail.mailers.smtp.stream', [
+            'ssl' => [
+                'allow_self_signed' => true,
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
         Config::set('mail.from.address', $fromAddress);
         Config::set('mail.from.name', $fromName);
 
@@ -146,6 +162,9 @@ class MailService
 
         $dbHost = Setting::get('imap_host');
         $host = (!empty($dbHost) && $dbHost !== 'imap.mailtrap.io') ? $dbHost : 'imap.gmail.com';
+        if ($host === 'mail.mawthiq.tech') {
+            $host = 'mawthiq.tech';
+        }
         $port = (int) Setting::get('imap_port', 993);
         $encryption = Setting::get('imap_encryption', 'ssl');
 
@@ -153,6 +172,9 @@ class MailService
         $username = (!empty($dbUser) && $dbUser !== 'demo_smtp_user') ? $dbUser : Setting::get('mail_username');
         if (empty($username) || $username === 'demo_smtp_user') {
             $username = config('mail.mailers.smtp.username', 'mawthiqtr@gmail.com');
+        }
+        if ($username === 'dmin@mawthiq.tech') {
+            $username = 'admin@mawthiq.tech';
         }
 
         $dbPass = Setting::get('imap_password');
