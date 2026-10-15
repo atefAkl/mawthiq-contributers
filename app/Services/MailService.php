@@ -160,6 +160,12 @@ class MailService
             ];
         }
 
+        $mailHost = Setting::get('mail_host');
+        if ($mailHost === 'mail.mawthiq.tech') $mailHost = 'mawthiq.tech';
+        $mailUsername = Setting::get('mail_username');
+        if ($mailUsername === 'dmin@mawthiq.tech') $mailUsername = 'admin@mawthiq.tech';
+        $mailPassword = Setting::get('mail_password');
+
         $dbHost = Setting::get('imap_host');
         $host = (!empty($dbHost) && $dbHost !== 'imap.mailtrap.io') ? $dbHost : 'imap.gmail.com';
         if ($host === 'mail.mawthiq.tech') {
@@ -169,18 +175,20 @@ class MailService
         $encryption = Setting::get('imap_encryption', 'ssl');
 
         $dbUser = Setting::get('imap_username');
-        $username = (!empty($dbUser) && $dbUser !== 'demo_smtp_user') ? $dbUser : Setting::get('mail_username');
-        if (empty($username) || $username === 'demo_smtp_user') {
-            $username = config('mail.mailers.smtp.username', 'mawthiqtr@gmail.com');
+        if (empty($dbUser) || $dbUser === 'demo_smtp_user' || $dbUser === 'mawthiqtr@gmail.com' || $host === $mailHost) {
+            $username = $mailUsername ?: config('mail.mailers.smtp.username', 'admin@mawthiq.tech');
+        } else {
+            $username = $dbUser;
         }
         if ($username === 'dmin@mawthiq.tech') {
             $username = 'admin@mawthiq.tech';
         }
 
         $dbPass = Setting::get('imap_password');
-        $password = (!empty($dbPass) && $dbPass !== 'demo_secret_pass') ? $dbPass : Setting::get('mail_password');
-        if (empty($password) || $password === 'demo_secret_pass') {
-            $password = config('mail.mailers.smtp.password', 'Shaza@2020');
+        if (empty($dbPass) || $dbPass === 'demo_secret_pass' || $dbPass === 'Shaza@2020' || $host === $mailHost) {
+            $password = $mailPassword ?: config('mail.mailers.smtp.password', 'Mawthiq@2020');
+        } else {
+            $password = $dbPass;
         }
 
         $flags = "/imap/{$encryption}/novalidate-cert";

@@ -77,6 +77,9 @@ export default function SettingsPage({ currentRoute, navigate }) {
         try {
             const payload = {
                 ...settings,
+                imap_username: settings.imap_username || settings.mail_username,
+                imap_password: settings.imap_password || settings.mail_password,
+                imap_host: settings.imap_host || settings.mail_host || 'mawthiq.tech',
                 allowed_positions: JSON.stringify(positions),
             };
             await api.post('/settings', { settings: payload });
@@ -95,6 +98,9 @@ export default function SettingsPage({ currentRoute, navigate }) {
             // Auto-save current form settings before testing
             const payload = {
                 ...settings,
+                imap_username: settings.imap_username || settings.mail_username,
+                imap_password: settings.imap_password || settings.mail_password,
+                imap_host: settings.imap_host || settings.mail_host || 'mawthiq.tech',
                 allowed_positions: JSON.stringify(positions),
             };
             await api.post('/settings', { settings: payload });
@@ -114,6 +120,9 @@ export default function SettingsPage({ currentRoute, navigate }) {
             // Auto-save current form settings before syncing
             const payload = {
                 ...settings,
+                imap_username: settings.imap_username || settings.mail_username,
+                imap_password: settings.imap_password || settings.mail_password,
+                imap_host: settings.imap_host || settings.mail_host || 'mawthiq.tech',
                 allowed_positions: JSON.stringify(positions),
             };
             await api.post('/settings', { settings: payload });
@@ -397,6 +406,29 @@ export default function SettingsPage({ currentRoute, navigate }) {
                                         <option value="ssl">SSL (منفذ 993 - افتراضي)</option>
                                         <option value="tls">TLS</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-600 mb-1">اسم مستخدم IMAP (اتركه فارغاً لاستخدام بريد SMTP)</label>
+                                    <input
+                                        type="text"
+                                        value={settings.imap_username || ''}
+                                        onChange={e => handleChange('imap_username', e.target.value)}
+                                        placeholder={settings.mail_username || 'admin@mawthiq.tech'}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-600 mb-1">كلمة مرور IMAP (اتركها فارغة لاستخدام كلمة مرور SMTP)</label>
+                                    <input
+                                        type="password"
+                                        value={settings.imap_password || ''}
+                                        onChange={e => handleChange('imap_password', e.target.value)}
+                                        placeholder="مطابقة لكلمة مرور SMTP"
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                    />
                                 </div>
                             </div>
                         </div>

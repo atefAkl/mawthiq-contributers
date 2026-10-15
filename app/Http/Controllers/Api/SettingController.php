@@ -23,6 +23,18 @@ class SettingController extends Controller
             Setting::set('mail_from_name', config('mail.from.name', 'منصة إدارة المتقدمين والمساهمين'), 'string', 'email');
         }
 
+        // Auto-heal IMAP credentials to match SMTP credentials if outdated
+        $currentMailUser = Setting::get('mail_username');
+        $currentMailPass = Setting::get('mail_password');
+        if (!empty($currentMailUser) && $currentMailUser !== 'mawthiqtr@gmail.com' && $currentMailUser !== 'demo_smtp_user') {
+            $currentImapUser = Setting::get('imap_username');
+            if (empty($currentImapUser) || $currentImapUser === 'mawthiqtr@gmail.com' || $currentImapUser === 'demo_smtp_user') {
+                Setting::set('imap_username', $currentMailUser, 'string', 'email');
+                Setting::set('imap_password', $currentMailPass, 'string', 'email');
+                Setting::set('imap_host', Setting::get('mail_host', 'mawthiq.tech'), 'string', 'email');
+            }
+        }
+
         $settings = Setting::all()->groupBy('group');
 
         return response()->json([
