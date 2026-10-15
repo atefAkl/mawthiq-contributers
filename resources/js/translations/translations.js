@@ -121,6 +121,16 @@ export const translations = {
         selectTemplate: 'اختر قالباً جاهزاً',
         simulateApplicantReply: 'محاكاة رد بريدي من المتقدم',
         emailLogs: 'سجل المراسلات الإلكترونية',
+        unreadEmails: 'غير مقروءة',
+        starredEmails: 'المميزة بنجمة',
+        markAsRead: 'تعليم كمقروء',
+        markAsUnread: 'تعليم كغير مقروء',
+        starEmail: 'تمييز بنجمة',
+        unstarEmail: 'إلغاء التمييز',
+        reply: 'الرد',
+        forward: 'إعادة توجيه',
+        deleteEmail: 'حذف الرسالة',
+        deleteSelected: 'حذف المحدد',
 
         // Users & Roles
         manageUsers: 'إدارة المستخدمين',
@@ -294,6 +304,16 @@ export const translations = {
         selectTemplate: 'Choose Template',
         simulateApplicantReply: 'Simulate Applicant Reply',
         emailLogs: 'Email Activity Logs',
+        unreadEmails: 'Unread',
+        starredEmails: 'Starred',
+        markAsRead: 'Mark as Read',
+        markAsUnread: 'Mark as Unread',
+        starEmail: 'Star',
+        unstarEmail: 'Unstar',
+        reply: 'Reply',
+        forward: 'Forward',
+        deleteEmail: 'Delete Email',
+        deleteSelected: 'Delete Selected',
 
         // Users & Roles
         manageUsers: 'User Management',

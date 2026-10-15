@@ -19,6 +19,13 @@ class EmailLog extends Model
         'status',
         'template_name',
         'sent_by',
+        'is_read',
+        'is_starred',
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
+        'is_starred' => 'boolean',
     ];
 
     public function applicant()

@@ -84,6 +84,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/sync-imap', [EmailController::class, 'syncImap']);
         Route::post('/inbound', [EmailController::class, 'inbound']);
         Route::get('/templates', [EmailController::class, 'getTemplates']);
+        Route::patch('/{id}/read', [EmailController::class, 'toggleRead']);
+        Route::patch('/{id}/star', [EmailController::class, 'toggleStar']);
+        Route::delete('/{id}', [EmailController::class, 'destroy']);
+        Route::post('/bulk-action', [EmailController::class, 'bulkAction']);
     });
 
     // User Management & RBAC

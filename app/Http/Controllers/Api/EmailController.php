@@ -17,7 +17,13 @@ class EmailController extends Controller
         $query = EmailLog::with(['applicant', 'sentByUser'])->orderBy('created_at', 'desc');
 
         if ($request->filled('type') && $request->type !== 'all') {
-            $query->where('type', $request->type);
+            if ($request->type === 'unread') {
+                $query->where('is_read', false);
+            } elseif ($request->type === 'starred') {
+                $query->where('is_starred', true);
+            } else {
+                $query->where('type', $request->type);
+            }
         }
 
         if ($request->filled('applicant_id')) {
@@ -40,6 +46,8 @@ class EmailController extends Controller
             'total' => EmailLog::count(),
             'sent' => EmailLog::where('type', 'sent')->count(),
             'received' => EmailLog::where('type', 'received')->count(),
+            'unread' => EmailLog::where('is_read', false)->count(),
+            'starred' => EmailLog::where('is_starred', true)->count(),
         ];
 
         return response()->json([
@@ -197,6 +205,88 @@ class EmailController extends Controller
                 'subject' => 'بخصوص طلب انضمامك - {POSITION} [{APP_NO}]',
                 'body' => "عزيزي {NAME}،\n\nنشكرك على اهتمامك ووقتك في التقدم لوظيفة ({POSITION}).\nنظراً للإقبال الكبير وتفضيل مطابقة المعايير بدقة للمرحلة الحالية، نعتذر عن عدم المضي قدماً في طلبك في الوقت الراهن، مع الاحتفاظ ببياناتك للفرص المستقبلية.\n\nمع تمنياتنا لك بالتوفيق والنجاح.\nفريق الاستقطاب"
             ],
+        ]);
+    }
+
+    public function toggleRead(Request $request, $id)
+    {
+        $email = EmailLog::findOrFail($id);
+        $isRead = $request->has('is_read') ? $request->boolean('is_read') : !$email->is_read;
+        $email->update(['is_read' => $isRead]);
+
+        return response()->json([
+            'message' => $isRead ? 'تم تعليم الرسالة كمقروءة.' : 'تم تعليم الرسالة كغير مقروءة.',
+            'email' => $email->load(['applicant', 'sentByUser']),
+        ]);
+    }
+
+    public function toggleStar(Request $request, $id)
+    {
+        $email = EmailLog::findOrFail($id);
+        $isStarred = $request->has('is_starred') ? $request->boolean('is_starred') : !$email->is_starred;
+        $email->update(['is_starred' => $isStarred]);
+
+        return response()->json([
+            'message' => $isStarred ? 'تمت إضافة الرسالة إلى المميزة بنجمة.' : 'تمت إزالة الرسالة من المميزة بنجمة.',
+            'email' => $email->load(['applicant', 'sentByUser']),
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $email = EmailLog::findOrFail($id);
+        $email->delete();
+
+        return response()->json([
+            'message' => 'تم حذف الرسالة بنجاح.',
+        ]);
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:email_logs,id',
+            'action' => 'required|string|in:delete,mark_read,mark_unread,star,unstar',
+        ]);
+
+        $ids = $validated['ids'];
+        $count = count($ids);
+
+        switch ($validated['action']) {
+            case 'delete':
+                EmailLog::whereIn('id', $ids)->delete();
+                $msg = "تم حذف {$count} رسائل بنجاح.";
+                break;
+            case 'mark_read':
+                EmailLog::whereIn('id', $ids)->update(['is_read' => true]);
+                $msg = "تم تعليم {$count} رسائل كمقروءة.";
+                break;
+            case 'mark_unread':
+                EmailLog::whereIn('id', $ids)->update(['is_read' => false]);
+                $msg = "تم تعليم {$count} رسائل كغير مقروءة.";
+                break;
+            case 'star':
+                EmailLog::whereIn('id', $ids)->update(['is_starred' => true]);
+                $msg = "تمت إضافة {$count} رسائل إلى المميزة بنجمة.";
+                break;
+            case 'unstar':
+                EmailLog::whereIn('id', $ids)->update(['is_starred' => false]);
+                $msg = "تمت إزالة {$count} رسائل من المميزة بنجمة.";
+                break;
+        }
+
+        $stats = [
+            'total' => EmailLog::count(),
+            'sent' => EmailLog::where('type', 'sent')->count(),
+            'received' => EmailLog::where('type', 'received')->count(),
+            'unread' => EmailLog::where('is_read', false)->count(),
+            'starred' => EmailLog::where('is_starred', true)->count(),
+        ];
+
+        return response()->json([
+            'message' => $msg,
+            'stats' => $stats,
         ]);
     }
 }

@@ -107,6 +107,8 @@ class MailService
             'status' => 'sent',
             'template_name' => $templateName,
             'sent_by' => $userId,
+            'is_read' => true,
+            'is_starred' => false,
         ]);
 
         $htmlContent = '
