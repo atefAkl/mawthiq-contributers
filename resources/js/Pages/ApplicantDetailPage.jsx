@@ -232,6 +232,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const [matchingSlots, setMatchingSlots] = useState([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [interviewerInfo, setInterviewerInfo] = useState(null);
+    const [applicantSlotInfo, setApplicantSlotInfo] = useState(null);
+    const [savingAvailability, setSavingAvailability] = useState(false);
 
     const fetchAvailableSlots = async () => {
         if (!applicant) return;
@@ -240,6 +242,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
             const res = await api.get(`/interviews/available-slots?applicant_id=${applicant.id}`);
             setMatchingSlots(res.slots || []);
             setInterviewerInfo(res.interviewer || null);
+            setApplicantSlotInfo(res.applicant || null);
         } catch (err) {
             console.error('Failed to fetch available slots:', err);
         } finally {
@@ -356,11 +359,15 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
     // Save Personal & Professional Data
     const handleSavePersonalInfo = async (e) => {
-        e.preventDefault();
+        if (e?.preventDefault) e.preventDefault();
         setSavingPersonal(true);
         try {
             const payload = {
                 ...personalForm,
+                age: personalForm.age !== '' && !isNaN(personalForm.age) ? parseInt(personalForm.age) : null,
+                experience_years: personalForm.experience_years !== '' && !isNaN(personalForm.experience_years) ? parseInt(personalForm.experience_years) : 0,
+                birth_date: personalForm.birth_date || null,
+                rating: personalForm.rating !== '' && !isNaN(personalForm.rating) ? parseFloat(personalForm.rating) : 0,
                 availability: {
                     windows: personalForm.availability?.windows || [],
                     notes: personalForm.availability?.notes || '',
@@ -376,6 +383,60 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
             showToast(err.message || 'فشل تحديث البيانات.', 'error');
         } finally {
             setSavingPersonal(false);
+        }
+    };
+
+    // Dedicated Save for Availability Windows Only
+    const handleSaveAvailabilityOnly = async () => {
+        setSavingAvailability(true);
+        try {
+            const payload = {
+                availability: {
+                    windows: personalForm.availability?.windows || [],
+                    notes: personalForm.availability?.notes || '',
+                }
+            };
+            const res = await api.patch(`/applicants/${applicant.id}/availability`, payload);
+            setApplicant(res.applicant);
+            showToast('تم حفظ واعتماد أوقات تفرغ المتقدم في قاعدة البيانات بنجاح!', 'success');
+            fetchAvailableSlots();
+        } catch (err) {
+            showToast(err.message || 'فشل حفظ أوقات التفرغ.', 'error');
+        } finally {
+            setSavingAvailability(false);
+        }
+    };
+
+    // Quick One-Click Default Availability Setup from Modal or Overview
+    const handleQuickSaveDefaultAvailability = async () => {
+        setLoadingSlots(true);
+        try {
+            const defaultWindows = [
+                {
+                    days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'],
+                    all_day: false,
+                    from: '15:00',
+                    to: '18:00',
+                }
+            ];
+            const payload = {
+                availability: {
+                    windows: defaultWindows,
+                    notes: personalForm.availability?.notes || '',
+                }
+            };
+            const res = await api.patch(`/applicants/${applicant.id}/availability`, payload);
+            setApplicant(res.applicant);
+            setPersonalForm(prev => ({
+                ...prev,
+                availability: res.applicant.availability,
+            }));
+            showToast('تم تثبيت واعتماد أوقات تفرغ المتقدم (3:00 م - 6:00 م) بنجاح!', 'success');
+            await fetchAvailableSlots();
+        } catch (err) {
+            showToast(err.message || 'فشل حفظ أوقات التفرغ', 'error');
+        } finally {
+            setLoadingSlots(false);
         }
     };
 
@@ -1298,6 +1359,37 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
                                     />
                                 </div>
+
+                                {/* Section 4 Dedicated Save Action */}
+                                <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-blue-50/70 p-3.5 rounded-xl border border-blue-100">
+                                    <div className="text-xs text-blue-900 font-medium">
+                                        💡 انقر لحفظ وتثبيت أوقات التفرغ هذه للمتقدم مباشرة في قاعدة البيانات لاعتمادها في احتساب التقاطع:
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveAvailabilityOnly}
+                                        disabled={savingAvailability}
+                                        className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2 shadow-2xs"
+                                    >
+                                        <span>💾</span>
+                                        <span>{savingAvailability ? t('saving') : 'حفظ أوقات التفرغ للمتقدم'}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Full Form Bottom Actions Bar */}
+                            <div className="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                                <span className="text-xs text-slate-500">
+                                    تأكد من حفظ التعديلات لاعتمادها في النظام والجدولة الذكية
+                                </span>
+                                <button
+                                    type="submit"
+                                    disabled={savingPersonal}
+                                    className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2 shadow-2xs"
+                                >
+                                    <span>💾</span>
+                                    <span>{savingPersonal ? t('saving') : t('save')}</span>
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -1904,8 +1996,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                 {applicant.availability.preferred_days.map(d => t(`day${d}`) || d).join(', ')}
                                             </span>
                                         ) : (
-                                            <span className="text-[11px] text-slate-500">
-                                                مرن طوال أيام الأسبوع
+                                            <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-semibold">
+                                                ⚠️ لم يتم حفظ أوقات تفرغ مخصصة في قاعدة البيانات بعد (انقر على &quot;تعديل&quot; لضبطها وحفظها)
                                             </span>
                                         )}
                                     </div>
@@ -2489,21 +2581,44 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                     <span className="font-bold text-slate-700 block">
                                         👤 {t('candidateAvailabilitySummary')}:
                                     </span>
-                                    {Array.isArray(applicant.availability?.windows) && applicant.availability.windows.length > 0 ? (
-                                        applicant.availability.windows.map((w, i) => (
-                                            <div key={i} className="text-slate-600 font-medium">
-                                                &bull; {(w.days || []).map(d => t(`day${d}`) || d).join(', ')}:{' '}
-                                                <span className="font-bold text-blue-700">
-                                                    {w.all_day ? t('allDayFlexible') : `${w.from} إلى ${w.to}`}
-                                                </span>
+                                    {(() => {
+                                        const windows = (applicantSlotInfo?.windows && applicantSlotInfo.windows.length > 0)
+                                            ? applicantSlotInfo.windows
+                                            : (Array.isArray(applicant.availability?.windows) && applicant.availability.windows.length > 0
+                                                ? applicant.availability.windows
+                                                : []);
+
+                                        if (windows.length > 0) {
+                                            return windows.map((w, i) => (
+                                                <div key={i} className="text-slate-600 font-medium text-[11px]">
+                                                    &bull; {(w.days || []).map(d => t(`day${d}`) || d).join(', ')}:{' '}
+                                                    <span className="font-bold text-blue-700">
+                                                        {w.all_day ? t('allDayFlexible') : `${w.from} إلى ${w.to}`}
+                                                    </span>
+                                                </div>
+                                            ));
+                                        }
+
+                                        return (
+                                            <div className="space-y-1.5 pt-0.5">
+                                                <div className="text-amber-700 font-semibold text-[10px] bg-amber-50 p-1.5 rounded-lg border border-amber-200">
+                                                    ⚠️ أوقات التفرغ غير محفوظة في قاعدة البيانات للمتقدم بعد.
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleQuickSaveDefaultAvailability}
+                                                    disabled={loadingSlots}
+                                                    className="w-full py-1 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
+                                                >
+                                                    <span>⚡</span>
+                                                    <span>تثبيت تفرغ المتقدم (3:00 م - 6:00 م) الآن</span>
+                                                </button>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-slate-500">مرن طوال الأسبوع</div>
-                                    )}
-                                    {applicant.availability?.notes && (
+                                        );
+                                    })()}
+                                    {(applicantSlotInfo?.notes || applicant.availability?.notes) && (
                                         <div className="text-slate-400 italic text-[10px] mt-0.5">
-                                            &ldquo;{applicant.availability.notes}&rdquo;
+                                            &ldquo;{applicantSlotInfo?.notes || applicant.availability.notes}&rdquo;
                                         </div>
                                     )}
                                 </div>

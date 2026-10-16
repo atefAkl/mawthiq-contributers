@@ -409,6 +409,26 @@ class InterviewController extends Controller
             return ((int)($parts[0] ?? 0) * 60) + (int)($parts[1] ?? 0);
         };
 
+        $dayMapping = [
+            'الأحد' => 'Sunday',
+            'الاحد' => 'Sunday',
+            'الإثنين' => 'Monday',
+            'الاثنين' => 'Monday',
+            'الثلاثاء' => 'Tuesday',
+            'الأربعاء' => 'Wednesday',
+            'الاربعاء' => 'Wednesday',
+            'الخميس' => 'Thursday',
+            'الجمعة' => 'Friday',
+            'السبت' => 'Saturday',
+        ];
+
+        $normalizeDays = function ($days) use ($dayMapping) {
+            if (!is_array($days)) return [];
+            return array_map(function ($d) use ($dayMapping) {
+                return $dayMapping[$d] ?? $d;
+            }, $days);
+        };
+
         for ($d = 1; $d <= $daysAhead; $d++) {
             $date = Carbon::today()->addDays($d);
             $dayName = $date->format('l');
@@ -416,7 +436,7 @@ class InterviewController extends Controller
             // 1. Get Interviewer intervals for this day
             $interviewerIntervals = [];
             foreach ($interviewerHours as $ih) {
-                $days = $ih['days'] ?? [];
+                $days = $normalizeDays($ih['days'] ?? []);
                 if (in_array($dayName, $days) || in_array('all', $days)) {
                     if (!empty($ih['all_day'])) {
                         $interviewerIntervals[] = ['start' => 9 * 60, 'end' => 17 * 60];
@@ -438,7 +458,7 @@ class InterviewController extends Controller
             $applicantIntervals = [];
             if (!empty($applicantWindows)) {
                 foreach ($applicantWindows as $aw) {
-                    $days = $aw['days'] ?? [];
+                    $days = $normalizeDays($aw['days'] ?? []);
                     if (in_array($dayName, $days) || in_array('all', $days)) {
                         if (!empty($aw['all_day'])) {
                             $applicantIntervals[] = ['start' => 0, 'end' => 24 * 60];
@@ -510,6 +530,7 @@ class InterviewController extends Controller
                 'id' => $applicant->id,
                 'name' => $applicant->full_name,
                 'windows' => $applicantWindows,
+                'has_custom_availability' => !empty($applicantWindows),
                 'notes' => $applicant->availability['notes'] ?? null,
             ],
             'interviewer' => [

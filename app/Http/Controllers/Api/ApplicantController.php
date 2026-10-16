@@ -182,13 +182,13 @@ class ApplicantController extends Controller
             'country' => 'nullable|string|max:100',
             'city' => 'nullable|string|max:100',
             'position' => 'required|string|max:255',
-            'experience_years' => 'nullable|integer|min:0|max:50',
+            'experience_years' => 'nullable',
             'education_level' => 'nullable|string|max:255',
-            'portfolio_url' => 'nullable|url|max:255',
-            'linkedin_url' => 'nullable|url|max:255',
-            'github_url' => 'nullable|url|max:255',
-            'age' => 'nullable|integer|min:15|max:100',
-            'birth_date' => 'nullable|date',
+            'portfolio_url' => 'nullable|max:255',
+            'linkedin_url' => 'nullable|max:255',
+            'github_url' => 'nullable|max:255',
+            'age' => 'nullable',
+            'birth_date' => 'nullable',
             'gender' => 'nullable|string|max:50',
             'governorate' => 'nullable|string|max:100',
             'address' => 'nullable|string|max:500',
@@ -198,10 +198,23 @@ class ApplicantController extends Controller
             'availability' => 'nullable|array',
             'cover_letter' => 'nullable|string|max:5000',
             'internal_notes' => 'nullable|string|max:5000',
-            'rating' => 'nullable|numeric|min:0|max:5',
+            'rating' => 'nullable',
             'skills' => 'nullable|array',
             'rejection_reason' => 'nullable|string|max:1000',
         ]);
+
+        // Sanitize string & nullable attributes
+        foreach (['national_id', 'country', 'city', 'governorate', 'address', 'marital_status', 'education_level', 'portfolio_url', 'linkedin_url', 'github_url', 'cover_letter', 'internal_notes', 'rejection_reason'] as $field) {
+            if (isset($validated[$field]) && $validated[$field] === '') {
+                $validated[$field] = null;
+            }
+        }
+
+        // Sanitize numeric and date fields to prevent SQL strict mode errors
+        $validated['age'] = (!empty($validated['age']) || (is_numeric($validated['age']) && (int)$validated['age'] > 0)) ? (int)$validated['age'] : null;
+        $validated['birth_date'] = !empty($validated['birth_date']) ? $validated['birth_date'] : null;
+        $validated['experience_years'] = (isset($validated['experience_years']) && $validated['experience_years'] !== '') ? (int)$validated['experience_years'] : 0;
+        $validated['rating'] = (isset($validated['rating']) && $validated['rating'] !== '') ? (float)$validated['rating'] : 0.0;
 
         $applicant->update($validated);
         $fresh = $applicant->fresh(['statusLogs.changedByUser', 'interviews.interviewer', 'emailLogs.sentByUser']);
@@ -209,6 +222,30 @@ class ApplicantController extends Controller
 
         return response()->json([
             'message' => 'تم تحديث بيانات المتقدم بنجاح.',
+            'applicant' => $fresh,
+        ]);
+    }
+
+    /**
+     * Dedicated direct update for applicant availability
+     */
+    public function updateAvailability(Request $request, $id)
+    {
+        $applicant = Applicant::findOrFail($id);
+
+        $validated = $request->validate([
+            'availability' => 'required|array',
+        ]);
+
+        $applicant->update([
+            'availability' => $validated['availability'],
+        ]);
+
+        $fresh = $applicant->fresh(['statusLogs.changedByUser', 'interviews.interviewer', 'emailLogs.sentByUser']);
+        $fresh->setAttribute('attachments', $this->normalizeAttachments($fresh));
+
+        return response()->json([
+            'message' => 'تم حفظ وتحديث أوقات تفرغ المتقدم بنجاح.',
             'applicant' => $fresh,
         ]);
     }
