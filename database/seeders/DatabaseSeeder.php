@@ -366,11 +366,49 @@ class DatabaseSeeder extends Seeder
             ]
         ];
 
+        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('resumes');
+
         foreach ($candidates as $candData) {
             $history = $candData['history'] ?? [];
             unset($candData['history']);
 
             $applicant = Applicant::create($candData);
+
+            // Generate a valid PDF resume file for the seeded applicant
+            $pdfFilename = 'cv_' . $applicant->id . '_v1.pdf';
+            $pdfRelPath = 'resumes/' . $pdfFilename;
+            $pdfTitle = 'Curriculum Vitae - ' . $applicant->application_no . ' (' . $applicant->position . ')';
+            $streamContent = "BT /F1 16 Tf 50 750 Td (" . addslashes($pdfTitle) . ") Tj 0 -30 Td /F1 12 Tf (Email: " . addslashes($applicant->email) . " | Phone: " . addslashes($applicant->phone) . ") Tj 0 -22 Td (Experience: " . (int)$applicant->experience_years . " Years | Status: " . strtoupper($applicant->status) . ") Tj ET";
+            $streamLen = strlen($streamContent);
+            $validPdf = "%PDF-1.4\n"
+                . "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+                . "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+                . "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n"
+                . "4 0 obj\n<< /Length {$streamLen} >>\nstream\n{$streamContent}\nendstream\nendobj\n"
+                . "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n"
+                . "xref\n0 6\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000229 00000 n \n"
+                . sprintf("%010d 00000 n \n", 280 + $streamLen)
+                . "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" . (350 + $streamLen) . "\n%%EOF";
+
+            \Illuminate\Support\Facades\Storage::disk('public')->put($pdfRelPath, $validPdf);
+            $applicant->update([
+                'resume_path' => '/storage/' . $pdfRelPath,
+                'attachments' => [[
+                    'id' => 'att_seed_' . $applicant->id,
+                    'version' => 1,
+                    'filename' => $pdfFilename,
+                    'original_name' => 'CV_' . $applicant->application_no . '.pdf',
+                    'path' => '/storage/' . $pdfRelPath,
+                    'storage_path' => $pdfRelPath,
+                    'mime_type' => 'application/pdf',
+                    'size' => strlen($validPdf),
+                    'notes' => 'النسخة الأولية المرفقة مع طلب التقديم',
+                    'uploaded_by' => $applicant->full_name,
+                    'uploaded_at' => $candData['created_at']->toIso8601String(),
+                    'is_current' => true,
+                    'file_exists' => true,
+                ]],
+            ]);
 
             // Log status transitions
             foreach ($history as $h) {

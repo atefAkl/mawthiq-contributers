@@ -307,15 +307,15 @@ export default function EmailsPage({ currentRoute, navigate }) {
             <div className="space-y-6">
                 {/* Standardized Page Header Box */}
                 <PageHeader
-                    title={`${t('emails')} • مركز إدارة المراسلات`}
-                    subtitle="سجل وإدارة الرسائل الصادرة والواردة، الرد وإعادة التوجيه، التمييز والحذف الجماعي."
+                    title={t('emails')}
+                    subtitle={t('emailsSubtitle')}
                     icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                 >
                     {/* IMAP Sync Button */}
                     <IconButton
                         onClick={handleSyncImap}
                         disabled={syncingImap}
-                        tooltip={syncingImap ? 'جاري الفحص...' : 'فحص واستيراد الرسائل الجديدة (IMAP)'}
+                        tooltip={t('syncImap')}
                         icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
 
@@ -342,7 +342,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                 <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-xs space-y-3">
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                         {[
-                            { id: 'all', label: 'كافة الرسائل', count: stats.total || 0, icon: '📬' },
+                            { id: 'all', label: t('status_all'), count: stats.total || 0, icon: '📬' },
                             { id: 'sent', label: t('sentEmails'), count: stats.sent || 0, icon: '📤' },
                             { id: 'received', label: t('receivedEmails'), count: stats.received || 0, icon: '📥' },
                             { id: 'unread', label: t('unreadEmails'), count: stats.unread || 0, icon: '✉️', highlight: (stats.unread || 0) > 0 },

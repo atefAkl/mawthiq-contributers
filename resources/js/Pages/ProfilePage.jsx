@@ -76,15 +76,15 @@ export default function ProfilePage({ currentRoute, navigate }) {
             <div className="space-y-6 max-w-3xl">
                 {/* Standardized Page Header Box */}
                 <PageHeader
-                    title={`${t('profile')} • إعدادات الحساب الشخصي`}
-                    subtitle="تعديل البيانات الأساسية، البريد الإلكتروني، وتغيير كلمة المرور."
+                    title={t('myProfile')}
+                    subtitle={t('profileSubtitle')}
                     icon="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                 >
                     <IconButton
                         variant="primary"
                         onClick={handleUpdateProfile}
                         disabled={updatingProfile}
-                        tooltip={updatingProfile ? 'جاري الحفظ...' : 'حفظ البيانات الشخصية'}
+                        tooltip={updatingProfile ? t('saving') : t('saveProfile')}
                         icon="M5 13l4 4L19 7"
                     />
                 </PageHeader>
@@ -99,10 +99,10 @@ export default function ProfilePage({ currentRoute, navigate }) {
                         <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email}</p>
                         <div className="mt-2 flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                {user?.role?.display_name_ar || user?.role?.name || 'مدير'}
+                                {lang === 'en' ? (user?.role?.display_name_en || user?.role?.name) : (user?.role?.display_name_ar || user?.role?.name || 'مدير')}
                             </span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                حساب نشط
+                                {t('activeAccount')}
                             </span>
                         </div>
                     </div>
@@ -111,7 +111,7 @@ export default function ProfilePage({ currentRoute, navigate }) {
                 {/* Form 1: Profile Information */}
                 <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
                     <h3 className="font-bold text-sm text-slate-800 pb-3 border-b border-slate-100 mb-5">
-                        👤 تعديل البيانات الشخصية
+                        👤 {t('myProfile')}
                     </h3>
 
                     <form onSubmit={handleUpdateProfile} className="space-y-4">
@@ -149,7 +149,7 @@ export default function ProfilePage({ currentRoute, navigate }) {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">اللغة المفضلة</label>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">{t('preferredLanguage')}</label>
                                 <select
                                     value={locale}
                                     onChange={e => setLocale(e.target.value)}

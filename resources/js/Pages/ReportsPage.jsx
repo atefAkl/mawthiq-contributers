@@ -53,24 +53,24 @@ export default function ReportsPage({ currentRoute, navigate }) {
                 <PageHeader
                     className="print:hidden"
                     title={t('reports')}
-                    subtitle="مؤشرات الأداء، مراحل قمع الاستقطاب، نسب القبول، وتوزيع الأدوار."
+                    subtitle={t('reportsSubtitle')}
                     icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                 >
                     <IconButton
                         onClick={loadReportData}
-                        tooltip="تحديث بيانات التقارير"
+                        tooltip={t('refreshReports')}
                         icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                     <IconButton
                         onClick={printReport}
-                        tooltip="طباعة التقرير (Print / PDF)"
+                        tooltip={t('printReport')}
                         icon="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                     />
                     <IconButton
                         variant="primary"
                         href="/api/applicants/export"
                         download
-                        tooltip="تصدير البيانات (CSV)"
+                        tooltip={t('exportCsv')}
                         icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                 </PageHeader>
@@ -78,25 +78,25 @@ export default function ReportsPage({ currentRoute, navigate }) {
                 {/* Print Title Only */}
                 <div className="hidden print:block text-center pb-4 border-b border-slate-300">
                     <h1 className="text-2xl font-black text-slate-900">{t('appName')}</h1>
-                    <p className="text-xs text-slate-600">تقرير أداء دورة حياة المتقدمين والمساهمين - تاريخ: {new Date().toLocaleDateString('ar-EG')}</p>
+                    <p className="text-xs text-slate-600">{t('reports')} - {new Date().toLocaleDateString('ar-EG')}</p>
                 </div>
 
                 {/* KPI Metrics Summary */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">إجمالي المتقدمين</span>
+                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('totalApplicants')}</span>
                         <span className="text-2xl font-black text-slate-800">{overview?.total_applicants ?? 0}</span>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">مرحلة مشارك</span>
+                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('status_participant')}</span>
                         <span className="text-2xl font-black text-indigo-600">{overview?.participant_count ?? 0}</span>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">تحت الاختبار</span>
+                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('status_probation')}</span>
                         <span className="text-2xl font-black text-amber-600">{overview?.probation_count ?? 0}</span>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">المقبولون نهائياً</span>
+                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('status_accepted')}</span>
                         <span className="text-2xl font-black text-emerald-600">{overview?.accepted_count ?? 0}</span>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
@@ -104,7 +104,7 @@ export default function ReportsPage({ currentRoute, navigate }) {
                         <span className="text-2xl font-black text-emerald-600">{overview?.acceptance_rate ?? 0}%</span>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">معدل التقييم</span>
+                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('avgInterviewScore')}</span>
                         <span className="text-2xl font-black text-indigo-700">{overview?.avg_interview_score ? `${overview.avg_interview_score}/10` : '—'}</span>
                     </div>
                 </div>

@@ -9,10 +9,50 @@ use App\Models\AppNotification;
 use App\Models\EmailLog;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ApplicantController extends Controller
 {
+    protected function normalizeAttachments(Applicant $applicant): array
+    {
+        $attachments = is_array($applicant->attachments) ? $applicant->attachments : [];
+
+        // Migrate legacy single resume_path if attachments array is empty
+        if (empty($attachments) && !empty($applicant->resume_path)) {
+            $relPath = ltrim(preg_replace('#^/storage/#', '', $applicant->resume_path), '/');
+            $exists = Storage::disk('public')->exists($relPath);
+            $attachments = [[
+                'id' => 'att_legacy_' . $applicant->id,
+                'version' => 1,
+                'filename' => basename($relPath),
+                'original_name' => basename($relPath),
+                'path' => '/storage/' . $relPath,
+                'storage_path' => $relPath,
+                'mime_type' => $exists ? (Storage::disk('public')->mimeType($relPath) ?: 'application/pdf') : 'application/pdf',
+                'size' => $exists ? Storage::disk('public')->size($relPath) : 0,
+                'notes' => 'النسخة الأساسية',
+                'uploaded_by' => 'النظام',
+                'uploaded_at' => optional($applicant->updated_at ?? $applicant->created_at)->toIso8601String() ?: now()->toIso8601String(),
+                'is_current' => true,
+            ]];
+            $applicant->attachments = $attachments;
+            $applicant->saveQuietly();
+        }
+
+        // Enrich with live file existence check
+        return array_values(array_map(function ($att) {
+            $relPath = $att['storage_path'] ?? ltrim(preg_replace('#^/storage/#', '', $att['path'] ?? ''), '/');
+            $exists = $relPath && Storage::disk('public')->exists($relPath);
+            $att['storage_path'] = $relPath;
+            $att['file_exists'] = $exists;
+            if ($exists && empty($att['size'])) {
+                $att['size'] = Storage::disk('public')->size($relPath);
+            }
+            return $att;
+        }, $attachments));
+    }
+
     public function index(Request $request)
     {
         $query = Applicant::query();
@@ -74,6 +114,8 @@ class ApplicantController extends Controller
             'emailLogs.sentByUser',
             'createdByUser'
         ])->findOrFail($id);
+
+        $applicant->setAttribute('attachments', $this->normalizeAttachments($applicant));
 
         return response()->json([
             'applicant' => $applicant,
@@ -159,10 +201,12 @@ class ApplicantController extends Controller
         ]);
 
         $applicant->update($validated);
+        $fresh = $applicant->fresh(['statusLogs.changedByUser', 'interviews.interviewer', 'emailLogs.sentByUser']);
+        $fresh->setAttribute('attachments', $this->normalizeAttachments($fresh));
 
         return response()->json([
             'message' => 'تم تحديث بيانات المتقدم بنجاح.',
-            'applicant' => $applicant->fresh(['statusLogs.changedByUser', 'interviews.interviewer', 'emailLogs.sentByUser']),
+            'applicant' => $fresh,
         ]);
     }
 
@@ -172,20 +216,236 @@ class ApplicantController extends Controller
 
         $request->validate([
             'resume' => 'required|file|mimes:pdf,doc,docx|max:10240', // Max 10MB
+            'mode' => 'nullable|in:new_version,replace',
+            'attachment_id' => 'nullable|string',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         $file = $request->file('resume');
-        $filename = 'cv_' . $applicant->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        if (!$file || !$file->isValid()) {
+            return response()->json([
+                'message' => 'الملف المرفوع غير صالح أو لم يكتمل رفعه بشكل سليم.',
+            ], 422);
+        }
+
+        $attachments = $this->normalizeAttachments($applicant);
+        $mode = $request->input('mode', 'new_version');
+        $targetId = $request->input('attachment_id');
+
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'pdf');
+        $filename = 'cv_' . $applicant->id . '_' . time() . '_' . substr(uniqid(), -4) . '.' . $ext;
         $path = $file->storeAs('resumes', $filename, 'public');
 
+        if (!$path || !Storage::disk('public')->exists($path) || Storage::disk('public')->size($path) === 0) {
+            return response()->json([
+                'message' => 'تعذر حفظ الملف على الخادم أو أن الملف فارغ.',
+            ], 500);
+        }
+
+        $publicUrl = '/storage/' . $path;
+        $fileSize = Storage::disk('public')->size($path);
+        $mimeType = $file->getClientMimeType() ?: 'application/pdf';
+        $originalName = $file->getClientOriginalName() ?: $filename;
+        $uploaderName = $request->user()?->name ?? 'Admin';
+        $notes = $request->input('notes', '');
+
+        if ($mode === 'replace' && !empty($attachments)) {
+            $replaceIndex = null;
+            if ($targetId) {
+                foreach ($attachments as $idx => $att) {
+                    if (($att['id'] ?? '') === $targetId) {
+                        $replaceIndex = $idx;
+                        break;
+                    }
+                }
+            }
+            if ($replaceIndex === null) {
+                foreach ($attachments as $idx => $att) {
+                    if (!empty($att['is_current'])) {
+                        $replaceIndex = $idx;
+                        break;
+                    }
+                }
+            }
+            if ($replaceIndex === null) {
+                $replaceIndex = count($attachments) - 1;
+            }
+
+            $oldItem = $attachments[$replaceIndex];
+            $oldRelPath = $oldItem['storage_path'] ?? ltrim(preg_replace('#^/storage/#', '', $oldItem['path'] ?? ''), '/');
+            if ($oldRelPath && $oldRelPath !== $path && Storage::disk('public')->exists($oldRelPath)) {
+                Storage::disk('public')->delete($oldRelPath);
+            }
+
+            foreach ($attachments as &$att) {
+                $att['is_current'] = false;
+            }
+            unset($att);
+
+            $attachments[$replaceIndex] = [
+                'id' => $oldItem['id'] ?? ('att_' . uniqid()),
+                'version' => $oldItem['version'] ?? ($replaceIndex + 1),
+                'filename' => $filename,
+                'original_name' => $originalName,
+                'path' => $publicUrl,
+                'storage_path' => $path,
+                'mime_type' => $mimeType,
+                'size' => $fileSize,
+                'notes' => $notes !== '' ? $notes : ($oldItem['notes'] ?? 'تم استبدال الملف'),
+                'uploaded_by' => $uploaderName,
+                'uploaded_at' => now()->toIso8601String(),
+                'is_current' => true,
+                'file_exists' => true,
+            ];
+            $actionMessage = 'تم استبدال ملف السيرة الذاتية بنجاح.';
+        } else {
+            $maxVersion = 0;
+            foreach ($attachments as &$att) {
+                $att['is_current'] = false;
+                if (($att['version'] ?? 0) > $maxVersion) {
+                    $maxVersion = (int)$att['version'];
+                }
+            }
+            unset($att);
+
+            $nextVersion = $maxVersion + 1;
+            $attachments[] = [
+                'id' => 'att_' . uniqid(),
+                'version' => $nextVersion,
+                'filename' => $filename,
+                'original_name' => $originalName,
+                'path' => $publicUrl,
+                'storage_path' => $path,
+                'mime_type' => $mimeType,
+                'size' => $fileSize,
+                'notes' => $notes !== '' ? $notes : ('الإصدار رقم v' . $nextVersion),
+                'uploaded_by' => $uploaderName,
+                'uploaded_at' => now()->toIso8601String(),
+                'is_current' => true,
+                'file_exists' => true,
+            ];
+            $actionMessage = 'تم رفع إصدار جديد من السيرة الذاتية (v' . $nextVersion . ') بنجاح.';
+        }
+
         $applicant->update([
-            'resume_path' => '/storage/' . $path,
+            'resume_path' => $publicUrl,
+            'attachments' => array_values($attachments),
         ]);
 
+        $fresh = $applicant->fresh(['statusLogs.changedByUser', 'interviews.interviewer', 'emailLogs.sentByUser']);
+        $fresh->setAttribute('attachments', $this->normalizeAttachments($fresh));
+
         return response()->json([
-            'message' => 'تم رفع ملف السيرة الذاتية بنجاح.',
+            'message' => $actionMessage,
             'resume_path' => $applicant->resume_path,
-            'applicant' => $applicant->fresh(['statusLogs.changedByUser', 'interviews.interviewer', 'emailLogs.sentByUser']),
+            'applicant' => $fresh,
+        ]);
+    }
+
+    public function activateResume(Request $request, $id, $attachmentId)
+    {
+        $applicant = Applicant::findOrFail($id);
+        $attachments = $this->normalizeAttachments($applicant);
+
+        $activePath = null;
+        foreach ($attachments as &$att) {
+            if (($att['id'] ?? '') === $attachmentId) {
+                $att['is_current'] = true;
+                $activePath = $att['path'];
+            } else {
+                $att['is_current'] = false;
+            }
+        }
+        unset($att);
+
+        if (!$activePath) {
+            return response()->json(['message' => 'السجل المطلوب غير موجود.'], 404);
+        }
+
+        $applicant->update([
+            'resume_path' => $activePath,
+            'attachments' => array_values($attachments),
+        ]);
+
+        $fresh = $applicant->fresh(['statusLogs.changedByUser', 'interviews.interviewer', 'emailLogs.sentByUser']);
+        $fresh->setAttribute('attachments', $this->normalizeAttachments($fresh));
+
+        return response()->json([
+            'message' => 'تم تعيين هذا الإصدار كملف السيرة الذاتية المعتمد.',
+            'applicant' => $fresh,
+        ]);
+    }
+
+    public function deleteResume(Request $request, $id, $attachmentId = null)
+    {
+        $applicant = Applicant::findOrFail($id);
+        $attachments = $this->normalizeAttachments($applicant);
+
+        if (empty($attachments)) {
+            $applicant->update(['resume_path' => null, 'attachments' => []]);
+            return response()->json(['message' => 'لا توجد مرفقات لحذفها.']);
+        }
+
+        $deleteIndex = null;
+        if ($attachmentId) {
+            foreach ($attachments as $idx => $att) {
+                if (($att['id'] ?? '') === $attachmentId) {
+                    $deleteIndex = $idx;
+                    break;
+                }
+            }
+        } else {
+            foreach ($attachments as $idx => $att) {
+                if (!empty($att['is_current'])) {
+                    $deleteIndex = $idx;
+                    break;
+                }
+            }
+            if ($deleteIndex === null) {
+                $deleteIndex = count($attachments) - 1;
+            }
+        }
+
+        if ($deleteIndex === null) {
+            return response()->json(['message' => 'السجل المطلوب غير موجود.'], 404);
+        }
+
+        $target = $attachments[$deleteIndex];
+        $relPath = $target['storage_path'] ?? ltrim(preg_replace('#^/storage/#', '', $target['path'] ?? ''), '/');
+        if ($relPath && Storage::disk('public')->exists($relPath)) {
+            Storage::disk('public')->delete($relPath);
+        }
+
+        array_splice($attachments, $deleteIndex, 1);
+
+        $newResumePath = null;
+        if (!empty($attachments)) {
+            $hasCurrent = false;
+            foreach ($attachments as $att) {
+                if (!empty($att['is_current'])) {
+                    $hasCurrent = true;
+                    $newResumePath = $att['path'];
+                    break;
+                }
+            }
+            if (!$hasCurrent) {
+                $lastIdx = count($attachments) - 1;
+                $attachments[$lastIdx]['is_current'] = true;
+                $newResumePath = $attachments[$lastIdx]['path'];
+            }
+        }
+
+        $applicant->update([
+            'resume_path' => $newResumePath,
+            'attachments' => array_values($attachments),
+        ]);
+
+        $fresh = $applicant->fresh(['statusLogs.changedByUser', 'interviews.interviewer', 'emailLogs.sentByUser']);
+        $fresh->setAttribute('attachments', $this->normalizeAttachments($fresh));
+
+        return response()->json([
+            'message' => 'تم حذف المرفق بنجاح.',
+            'applicant' => $fresh,
         ]);
     }
 

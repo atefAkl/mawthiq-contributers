@@ -109,8 +109,8 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                         {/* Multi-lingual Layout Switcher */}
                         <button
                             onClick={toggleLang}
-                            className="px-2.5 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-1"
-                            title="تبديل اللغة / Switch Language"
+                            className="px-2.5 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-1 cursor-pointer"
+                            aria-label={t('switchLanguage')}
                         >
                             <span className="text-sm">🌐</span>
                             <span>{lang === 'ar' ? 'English' : 'عربي'}</span>
@@ -199,10 +199,10 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                                 </div>
                                 <div className="hidden lg:block text-start">
                                     <div className="text-xs font-bold text-slate-800 leading-none">
-                                        {user?.name || 'مستخدم'}
+                                        {user?.name || 'User'}
                                     </div>
                                     <div className="text-[11px] text-slate-500 font-medium mt-0.5">
-                                        {user?.role?.display_name_ar || user?.role?.name || 'Super Admin'}
+                                        {lang === 'en' ? (user?.role?.display_name_en || user?.role?.name || 'Super Admin') : (user?.role?.display_name_ar || user?.role?.name || 'Super Admin')}
                                     </div>
                                 </div>
                                 <svg className="w-4 h-4 text-slate-400 hidden lg:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -217,7 +217,7 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                                         <p className="text-xs font-bold text-slate-800 truncate">{user?.name}</p>
                                         <p className="text-[11px] text-slate-500 truncate">{user?.email}</p>
                                         <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            {user?.role?.display_name_ar || 'نشط'}
+                                            {lang === 'en' ? (user?.role?.display_name_en || t('active')) : (user?.role?.display_name_ar || t('active'))}
                                         </span>
                                     </div>
                                     <button

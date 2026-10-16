@@ -150,7 +150,7 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                 {/* Standardized Page Header Box */}
                 <PageHeader
                     title={t('usersAndRoles')}
-                    subtitle="التحكم بالمستخدمين الإداريين ومصفوفة الصلاحيات المبنية على الأدوار (RBAC)."
+                    subtitle={t('usersSubtitle')}
                     icon="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                 >
                     {/* Sub-Tab: Users */}
@@ -165,14 +165,14 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                     <IconButton
                         variant={activeTab === 'roles' ? 'active' : 'secondary'}
                         onClick={() => setActiveTab('roles')}
-                        tooltip={`${t('permissionsMatrix')} (${roles.length} أدوار)`}
+                        tooltip={`${t('permissionsMatrix')} (${roles.length})`}
                         icon="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                     />
 
                     {/* Refresh */}
                     <IconButton
                         onClick={loadData}
-                        tooltip="تحديث البيانات"
+                        tooltip={t('refresh')}
                         icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
 
@@ -190,7 +190,7 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                             variant="primary"
                             onClick={handleSaveRolePermissions}
                             disabled={savingPermissions}
-                            tooltip={savingPermissions ? 'جاري الحفظ...' : `حفظ صلاحيات (${selectedRole?.display_name_ar || ''})`}
+                            tooltip={savingPermissions ? t('saving') : t('save')}
                             icon="M5 13l4 4L19 7"
                         />
                     )}

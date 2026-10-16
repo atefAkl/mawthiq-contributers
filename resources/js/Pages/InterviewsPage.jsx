@@ -87,18 +87,18 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                 {/* Standardized Page Header Box */}
                 <PageHeader
                     title={t('interviews')}
-                    subtitle="جدولة المواعيد، روابط الاجتماعات، وتسجيل تقييمات ودرجات المحكمين."
+                    subtitle={t('interviewsSubtitle')}
                     icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                 >
                     <IconButton
                         onClick={() => loadInterviews(activeStatus)}
-                        tooltip="تحديث قائمة المقابلات"
+                        tooltip={t('refreshInterviews')}
                         icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                     <IconButton
                         variant="primary"
                         onClick={() => navigate('#/applicants')}
-                        tooltip="اختيار متقدم وجدولة مقابلة"
+                        tooltip={t('selectApplicantToSchedule')}
                         icon="M12 4v16m8-8H4"
                     />
                 </PageHeader>
@@ -106,10 +106,10 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                 {/* Filter Tabs */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-2 sm:p-3 shadow-xs flex items-center gap-1.5 overflow-x-auto">
                     {[
-                        { id: 'all', label: 'الكل', count: stats.total || 0 },
-                        { id: 'scheduled', label: 'المجدولة (القادمة)', count: stats.scheduled || 0 },
-                        { id: 'completed', label: 'المكتملة والمقيمة', count: stats.completed || 0 },
-                        { id: 'cancelled', label: 'الملغاة', count: stats.cancelled || 0 },
+                        { id: 'all', label: t('status_all'), count: stats.total || 0 },
+                        { id: 'scheduled', label: t('interview_scheduled'), count: stats.scheduled || 0 },
+                        { id: 'completed', label: t('interview_completed'), count: stats.completed || 0 },
+                        { id: 'cancelled', label: t('interview_cancelled'), count: stats.cancelled || 0 },
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -135,11 +135,11 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                     {loading ? (
                         <div className="col-span-full py-16 text-center text-slate-400">
                             <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                            جاري تحميل المقابلات...
+                            ...
                         </div>
                     ) : interviews.length === 0 ? (
                         <div className="col-span-full py-16 text-center text-slate-400 bg-white rounded-3xl border border-slate-200">
-                            لا توجد مقابلات مسجلة في هذا القسم حالياً.
+                            {t('noUpcomingInterviews')}
                         </div>
                     ) : (
                         interviews.map(item => (
@@ -156,7 +156,7 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                 ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                                 : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                                         }`}>
-                                            {item.status === 'completed' ? 'مكتملة' : item.status === 'cancelled' ? 'ملغاة' : 'مجدولة'}
+                                            {item.status === 'completed' ? t('status_completed_badge') : item.status === 'cancelled' ? t('status_cancelled_badge') : t('status_scheduled_badge')}
                                         </span>
                                         <span className="text-[11px] font-mono text-slate-400">
                                             {new Date(item.scheduled_at).toLocaleDateString('ar-EG', { dateStyle: 'short' })}

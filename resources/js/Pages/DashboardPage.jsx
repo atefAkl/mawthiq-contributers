@@ -50,12 +50,12 @@ export default function DashboardPage({ currentRoute, navigate }) {
                 {/* Standardized Page Header Box */}
                 <PageHeader
                     title={t('dashboard')}
-                    subtitle={`مرحباً بك ${user?.name || 'زميلنا العزيز'} — لوحة متابعة وإدارة المتقدمين والمساهمين، فحص مسار المرشحين، وجدولة المقابلات.`}
+                    subtitle={`${t('dashboardWelcome')} ${user?.name || ''} — ${t('dashboardSubtitle')}`}
                     icon="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                 >
                     <IconButton
                         onClick={loadStats}
-                        tooltip="تحديث الإحصائيات"
+                        tooltip={t('refreshStats')}
                         icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                     <IconButton
@@ -94,7 +94,7 @@ export default function DashboardPage({ currentRoute, navigate }) {
                             {stats?.overview?.total_applicants ?? (loading ? '...' : 0)}
                         </div>
                         <p className="text-[11px] text-slate-400 mt-1">
-                            {stats?.overview?.applicant_count ?? 0} في مرحلة المتقدم الأولي
+                            {stats?.overview?.applicant_count ?? 0} {t('inInitialStage')}
                         </p>
                     </div>
 
@@ -112,14 +112,14 @@ export default function DashboardPage({ currentRoute, navigate }) {
                             {stats?.overview?.acceptance_rate ?? 0}%
                         </div>
                         <p className="text-[11px] text-slate-400 mt-1">
-                            {stats?.overview?.accepted_count ?? 0} متقدم تم قبولهم رسمياً
+                            {stats?.overview?.accepted_count ?? 0} {t('officiallyAcceptedCount')}
                         </p>
                     </div>
 
                     {/* In Pipeline (Participant & Probation) */}
                     <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
                         <div className="flex items-center justify-between text-slate-500 mb-2">
-                            <span className="text-xs font-bold">تحت الفرز والاختبار</span>
+                            <span className="text-xs font-bold">{t('inScreeningAndProbation')}</span>
                             <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -130,7 +130,7 @@ export default function DashboardPage({ currentRoute, navigate }) {
                             {(stats?.overview?.participant_count ?? 0) + (stats?.overview?.probation_count ?? 0)}
                         </div>
                         <p className="text-[11px] text-slate-400 mt-1">
-                            {stats?.overview?.probation_count ?? 0} في فترة التجربة
+                            {stats?.overview?.probation_count ?? 0} {t('inProbationPeriod')}
                         </p>
                     </div>
 
@@ -148,7 +148,7 @@ export default function DashboardPage({ currentRoute, navigate }) {
                             {stats?.overview?.avg_interview_score ? `${stats.overview.avg_interview_score} / 10` : '—'}
                         </div>
                         <p className="text-[11px] text-slate-400 mt-1">
-                            {stats?.overview?.completed_interviews ?? 0} مقابلة مقيّمة
+                            {stats?.overview?.completed_interviews ?? 0} {t('evaluatedInterviewsCount')}
                         </p>
                     </div>
                 </div>
@@ -160,7 +160,7 @@ export default function DashboardPage({ currentRoute, navigate }) {
                             {t('pipelineFunnel')}
                         </h3>
                         <span className="text-xs text-slate-500">
-                            الدورة الحالية
+                            {t('currentCycle')}
                         </span>
                     </div>
 
@@ -194,19 +194,19 @@ export default function DashboardPage({ currentRoute, navigate }) {
                     <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-bold text-sm text-slate-800">
-                                أحدث المتقدمين للمنصة
+                                {t('recentApplicants')}
                             </h3>
                             <IconButton
                                 size="sm"
                                 onClick={() => navigate('#/applicants')}
-                                tooltip="عرض كافة المتقدمين"
+                                tooltip={t('viewAllApplicants')}
                                 icon="M17 8l4 4m0 0l-4 4m4-4H3"
                             />
                         </div>
 
                         <div className="divide-y divide-slate-100">
                             {stats?.recent_applicants?.length === 0 ? (
-                                <p className="py-6 text-center text-xs text-slate-400">لا يوجد متقدمون مسجلون حالياً.</p>
+                                <p className="py-6 text-center text-xs text-slate-400">{t('noApplicantsYet')}</p>
                             ) : (
                                 stats?.recent_applicants?.map(app => (
                                     <div
@@ -240,19 +240,19 @@ export default function DashboardPage({ currentRoute, navigate }) {
                     <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-bold text-sm text-slate-800">
-                                المقابلات القادمة المجدولة
+                                {t('upcomingScheduledInterviews')}
                             </h3>
                             <IconButton
                                 size="sm"
                                 onClick={() => navigate('#/interviews')}
-                                tooltip="عرض جدول المقابلات"
+                                tooltip={t('viewInterviewsSchedule')}
                                 icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                             />
                         </div>
 
                         <div className="divide-y divide-slate-100">
                             {stats?.upcoming_interviews?.length === 0 ? (
-                                <p className="py-6 text-center text-xs text-slate-400">لا توجد مقابلات مجدولة قادمة.</p>
+                                <p className="py-6 text-center text-xs text-slate-400">{t('noUpcomingInterviews')}</p>
                             ) : (
                                 stats?.upcoming_interviews?.map(item => (
                                     <div
@@ -264,7 +264,7 @@ export default function DashboardPage({ currentRoute, navigate }) {
                                                 {item.applicant?.full_name} &bull; <span className="font-normal text-slate-500">{item.applicant?.position}</span>
                                             </p>
                                             <p className="text-[11px] text-slate-400 mt-0.5">
-                                                {new Date(item.scheduled_at).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                {new Date(item.scheduled_at).toLocaleString(isRtl ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
                                             </p>
                                         </div>
                                         {item.meeting_link ? (
@@ -274,11 +274,11 @@ export default function DashboardPage({ currentRoute, navigate }) {
                                                 href={item.meeting_link}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                tooltip="فتح رابط الاجتماع"
+                                                tooltip={t('openMeetingLink')}
                                                 icon="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                             />
                                         ) : (
-                                            <span className="text-[11px] text-slate-400">حضوري</span>
+                                            <span className="text-[11px] text-slate-400">{t('inPersonShort')}</span>
                                         )}
                                     </div>
                                 ))

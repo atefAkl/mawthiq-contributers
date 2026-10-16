@@ -63,6 +63,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [ApplicantController::class, 'destroy']);
         Route::post('/{id}/status', [ApplicantController::class, 'updateStatus']);
         Route::post('/{id}/resume', [ApplicantController::class, 'uploadResume']);
+        Route::patch('/{id}/resume/{attachmentId}/activate', [ApplicantController::class, 'activateResume']);
+        Route::delete('/{id}/resume/{attachmentId?}', [ApplicantController::class, 'deleteResume']);
     });
 
     // Interviews & Evaluation Results

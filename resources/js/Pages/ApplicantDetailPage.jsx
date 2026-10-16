@@ -36,9 +36,15 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const [portfolioItems, setPortfolioItems] = useState([]);
     const [newPortfolio, setNewPortfolio] = useState({ title: '', url: '', image_url: '', description: '' });
 
-    // CV Upload (ملف واحد)
+    // CV & Attachments Management (إصدارات متعددة + استبدال + حذف)
     const [uploadingCv, setUploadingCv] = useState(false);
     const [cvFile, setCvFile] = useState(null);
+    const [cvMode, setCvMode] = useState('new_version'); // 'new_version' | 'replace'
+    const [replaceTargetId, setReplaceTargetId] = useState(null);
+    const [cvNotes, setCvNotes] = useState('');
+    const [deletingAttId, setDeletingAttId] = useState(null);
+    const [activatingAttId, setActivatingAttId] = useState(null);
+    const fileInputRef = React.useRef(null);
 
     // Status Change Modal
     const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -154,7 +160,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         }
     };
 
-    // CV Upload (Single File)
+    // CV Upload (New Version or Replace)
     const handleUploadCv = async (e) => {
         e.preventDefault();
         if (!cvFile) {
@@ -165,17 +171,77 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         setUploadingCv(true);
         const formData = new FormData();
         formData.append('resume', cvFile);
+        formData.append('mode', cvMode);
+        if (replaceTargetId) {
+            formData.append('attachment_id', replaceTargetId);
+        }
+        if (cvNotes.trim()) {
+            formData.append('notes', cvNotes.trim());
+        }
 
         try {
             const res = await api.post(`/applicants/${applicant.id}/resume`, formData);
-            showToast('تم رفع ملف السيرة الذاتية بنجاح!', 'success');
+            showToast(res.message || 'تم رفع ملف السيرة الذاتية بنجاح!', 'success');
             setApplicant(res.applicant);
             setCvFile(null);
+            setCvNotes('');
+            setReplaceTargetId(null);
+            setCvMode('new_version');
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         } catch (err) {
             showToast(err.message || 'فشل رفع الملف.', 'error');
         } finally {
             setUploadingCv(false);
         }
+    };
+
+    const handleActivateAttachment = async (attachmentId) => {
+        setActivatingAttId(attachmentId);
+        try {
+            const res = await api.patch(`/applicants/${applicant.id}/resume/${attachmentId}/activate`);
+            setApplicant(res.applicant);
+            showToast(res.message || 'تم اعتماد هذا الإصدار بنجاح.', 'success');
+        } catch (err) {
+            showToast(err.message || 'فشل تفعيل الإصدار.', 'error');
+        } finally {
+            setActivatingAttId(null);
+        }
+    };
+
+    const handleDeleteAttachment = async (attachmentId) => {
+        if (!window.confirm(t('confirmDeleteAttachment'))) return;
+        setDeletingAttId(attachmentId || 'current');
+        try {
+            const endpoint = attachmentId
+                ? `/applicants/${applicant.id}/resume/${attachmentId}`
+                : `/applicants/${applicant.id}/resume`;
+            const res = await api.delete(endpoint);
+            setApplicant(res.applicant);
+            showToast(res.message || 'تم حذف المرفق بنجاح.', 'success');
+        } catch (err) {
+            showToast(err.message || 'فشل حذف المرفق.', 'error');
+        } finally {
+            setDeletingAttId(null);
+        }
+    };
+
+    const startReplaceAttachment = (att) => {
+        setCvMode('replace');
+        setReplaceTargetId(att?.id || null);
+        setCvNotes(att?.notes || '');
+        if (fileInputRef.current) {
+            fileInputRef.current.focus();
+            fileInputRef.current.click();
+        }
+    };
+
+    const formatBytes = (bytes) => {
+        if (!bytes || bytes <= 0) return '—';
+        const kb = bytes / 1024;
+        if (kb < 1024) return `${Math.round(kb)} KB`;
+        return `${(kb / 1024).toFixed(2)} MB`;
     };
 
     // Skills Add/Remove
@@ -459,8 +525,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
             <div className="space-y-6">
                 {/* Standardized Page Header Box */}
                 <PageHeader
-                    title={`ملف المتقدم: ${applicant.full_name}`}
-                    subtitle={`${applicant.position} • إدارة البيانات الشخصية، تقييم المقابلات، السيرة الذاتية، والمراسلات.`}
+                    title={`${t('applicantDetailTitle')} ${applicant.full_name}`}
+                    subtitle={`${applicant.position} • ${t('applicantDetailSubtitle')}`}
                     icon="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     badge={
                         <div className="inline-flex items-center gap-2">
@@ -472,25 +538,32 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                     {/* Back to Applicants List */}
                     <IconButton
                         onClick={() => navigate('#/applicants')}
-                        tooltip="العودة لقائمة المتقدمين"
+                        tooltip={t('backToApplicants')}
                         icon="M10 19l-7-7m0 0l7-7m-7 7h18"
                     />
 
-                    {/* Download / Upload CV */}
+                    {/* Preview / Download / Upload CV */}
                     {applicant.resume_path ? (
-                        <IconButton
-                            variant="success"
-                            href={applicant.resume_path}
-                            target="_blank"
-                            rel="noreferrer"
-                            download
-                            tooltip="تحميل السيرة الذاتية (CV)"
-                            icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
+                        <>
+                            <IconButton
+                                variant="active"
+                                href={applicant.resume_path}
+                                target="_blank"
+                                rel="noreferrer"
+                                tooltip={t('previewCvTooltip')}
+                                icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            />
+                            <IconButton
+                                variant="success"
+                                href={`${applicant.resume_path}?download=1`}
+                                tooltip={t('downloadCvTooltip')}
+                                icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                        </>
                     ) : (
                         <IconButton
                             onClick={() => setActiveTab('resume')}
-                            tooltip="رفع السيرة الذاتية (CV)"
+                            tooltip={t('uploadCvTooltip')}
                             icon="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                         />
                     )}
@@ -532,22 +605,22 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                 <span>📧 {applicant.email}</span>
                                 <span>📞 {applicant.phone}</span>
                                 <span>📍 {applicant.city ? `${applicant.city}، ` : ''}{applicant.country}</span>
-                                {applicant.age && <span>🎂 {applicant.age} سنة</span>}
+                                {applicant.age && <span>🎂 {applicant.age}</span>}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Smooth Tabs Navigation (بدون زحام) */}
+                {/* Smooth Tabs Navigation */}
                 <div className="bg-slate-100 p-1.5 rounded-2xl border border-slate-200 flex items-center gap-1 overflow-x-auto scrollbar-none">
                     {[
-                        { id: 'overview', label: 'البيانات الشخصية والمهنية', icon: '👤' },
-                        { id: 'social', label: `ملفات التواصل (${socialLinks.length})`, icon: '🌐' },
-                        { id: 'portfolio', label: `معرض الأعمال (${portfolioItems.length})`, icon: '🎨' },
-                        { id: 'resume', label: 'السيرة الذاتية (CV)', icon: '📄' },
-                        { id: 'interviews', label: `المقابلات والتقييم (${applicant.interviews?.length || 0})`, icon: '🎯' },
-                        { id: 'emails', label: `المراسلات والردود (${applicant.email_logs?.length || 0})`, icon: '✉️' },
-                        { id: 'timeline', label: 'المسار والترقيات', icon: '⏳' },
+                        { id: 'overview', label: t('tab_overview'), icon: '👤' },
+                        { id: 'social', label: `${t('tab_social')} (${socialLinks.length})`, icon: '🌐' },
+                        { id: 'portfolio', label: `${t('tab_portfolio')} (${portfolioItems.length})`, icon: '🎨' },
+                        { id: 'resume', label: `${t('tab_resume')} (${applicant.attachments?.length || (applicant.resume_path ? 1 : 0)})`, icon: '📄' },
+                        { id: 'interviews', label: `${t('tab_interviews')} (${applicant.interviews?.length || 0})`, icon: '🎯' },
+                        { id: 'emails', label: `${t('tab_emails')} (${applicant.email_logs?.length || 0})`, icon: '✉️' },
+                        { id: 'timeline', label: t('tab_timeline'), icon: '⏳' },
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -816,71 +889,322 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                     </div>
                 )}
 
-                {/* Tab 2: Resume (CV) Upload & Viewer (ملف واحد) */}
-                {activeTab === 'resume' && (
-                    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs max-w-2xl">
-                        <h3 className="font-black text-sm text-slate-800 mb-2">
-                            ملف السيرة الذاتية (CV / Resume)
-                        </h3>
-                        <p className="text-xs text-slate-500 mb-6">
-                            يمكنك هنا رفع ملف سيرة ذاتية للمتقدم (ملف واحد بصيغة PDF أو Word) واستعراضه أو تنزيله مباشرة.
-                        </p>
+                {/* Tab 2: Resume (CV) & Attachments Version Control */}
+                {activeTab === 'resume' && (() => {
+                    const attachmentsList = Array.isArray(applicant.attachments) && applicant.attachments.length > 0
+                        ? [...applicant.attachments].sort((a, b) => (b.version || 0) - (a.version || 0))
+                        : (applicant.resume_path ? [{
+                            id: 'att_legacy',
+                            version: 1,
+                            filename: applicant.resume_path.split('/').pop(),
+                            original_name: applicant.resume_path.split('/').pop(),
+                            path: applicant.resume_path,
+                            size: 0,
+                            notes: 'النسخة الأساسية',
+                            uploaded_at: applicant.updated_at || applicant.created_at,
+                            is_current: true,
+                            file_exists: true,
+                        }] : []);
+                    const currentAtt = attachmentsList.find(a => a.is_current) || attachmentsList[0] || null;
+                    const replaceTargetAtt = replaceTargetId ? attachmentsList.find(a => a.id === replaceTargetId) : currentAtt;
 
-                        {/* Current CV status */}
-                        {applicant.resume_path ? (
-                            <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between mb-8">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white font-bold flex items-center justify-center text-xl shadow-xs">
-                                        📄
-                                    </div>
+                    return (
+                        <div className="space-y-6">
+                            {/* Top Card: Upload New Version or Replace File */}
+                            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
+                                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-6">
                                     <div>
-                                        <p className="font-bold text-xs text-emerald-950">تم رفع السيرة الذاتية بنجاح</p>
-                                        <p className="text-[11px] text-emerald-700 font-mono mt-0.5 truncate max-w-xs">
-                                            {applicant.resume_path}
+                                        <h3 className="font-black text-sm text-slate-800">
+                                            {t('cvSectionTitle')}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            {t('cvSectionSubtitle')}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                    <a
-                                        href={applicant.resume_path}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        download
-                                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1"
-                                    >
-                                        تحميل / فتح
-                                    </a>
+                                {/* Active CV Banner */}
+                                {currentAtt ? (
+                                    <div className={`p-5 rounded-2xl border flex flex-wrap items-center justify-between gap-4 mb-6 ${
+                                        currentAtt.file_exists === false
+                                            ? 'bg-amber-50/70 border-amber-200'
+                                            : 'bg-emerald-50/70 border-emerald-200'
+                                    }`}>
+                                        <div className="flex items-center gap-3.5 min-w-0">
+                                            <div className={`w-12 h-12 rounded-xl text-white font-bold flex items-center justify-center text-xl shadow-xs shrink-0 ${
+                                                currentAtt.file_exists === false ? 'bg-amber-500' : 'bg-emerald-600'
+                                            }`}>
+                                                📄
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">
+                                                        v{currentAtt.version || 1} • {t('activeCvBadge')}
+                                                    </span>
+                                                    <p className="font-bold text-xs text-slate-900 truncate">
+                                                        {currentAtt.original_name || currentAtt.filename}
+                                                    </p>
+                                                    {currentAtt.size > 0 && (
+                                                        <span className="text-[11px] text-slate-500 font-mono">
+                                                            ({formatBytes(currentAtt.size)})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 font-mono mt-1 truncate">
+                                                    {currentAtt.path}
+                                                </p>
+                                                {currentAtt.file_exists === false && (
+                                                    <p className="text-[11px] text-amber-800 font-bold mt-1">
+                                                        ⚠️ {t('fileMissingWarning')}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <IconButton
+                                                variant="active"
+                                                href={`${currentAtt.path}?name=${encodeURIComponent(currentAtt.original_name || currentAtt.filename || 'cv.pdf')}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                tooltip={t('previewFile')}
+                                                icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                            />
+                                            <IconButton
+                                                variant="success"
+                                                href={`${currentAtt.path}?download=1&name=${encodeURIComponent(currentAtt.original_name || currentAtt.filename || 'cv.pdf')}`}
+                                                tooltip={t('downloadFile')}
+                                                icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                            />
+                                            <IconButton
+                                                variant="warning"
+                                                onClick={() => startReplaceAttachment(currentAtt)}
+                                                tooltip={t('replaceThisFile')}
+                                                icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                            />
+                                            <IconButton
+                                                variant="danger"
+                                                disabled={deletingAttId === currentAtt.id}
+                                                onClick={() => handleDeleteAttachment(currentAtt.id)}
+                                                tooltip={t('deleteAttachment')}
+                                                icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-5 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center mb-6 text-xs text-slate-500">
+                                        {t('noAttachmentsFound')}
+                                    </div>
+                                )}
+
+                                {/* Upload / Replace Form */}
+                                <form onSubmit={handleUploadCv} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                                {t('uploadModeLabel')}
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCvMode('new_version');
+                                                        setReplaceTargetId(null);
+                                                    }}
+                                                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center ${
+                                                        cvMode === 'new_version'
+                                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                                                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                    }`}
+                                                >
+                                                    ➕ {t('uploadModeNewVersion')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={attachmentsList.length === 0}
+                                                    onClick={() => {
+                                                        setCvMode('replace');
+                                                        if (!replaceTargetId && currentAtt) {
+                                                            setReplaceTargetId(currentAtt.id);
+                                                        }
+                                                    }}
+                                                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center disabled:opacity-40 ${
+                                                        cvMode === 'replace'
+                                                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                                                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                    }`}
+                                                >
+                                                    🔄 {t('uploadModeReplace')}
+                                                    {cvMode === 'replace' && replaceTargetAtt ? ` (v${replaceTargetAtt.version || 1})` : ''}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                                {t('attachmentNotesLabel')}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={cvNotes}
+                                                onChange={e => setCvNotes(e.target.value)}
+                                                placeholder={t('attachmentNotesPlaceholder')}
+                                                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-2">
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                                {t('selectCvFileLabel')}
+                                            </label>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept=".pdf,.doc,.docx"
+                                                onChange={e => setCvFile(e.target.files[0] || null)}
+                                                className="w-full text-xs text-slate-600 bg-white rounded-xl border border-slate-200 p-1.5 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                                            />
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={uploadingCv || !cvFile}
+                                            className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md disabled:opacity-50 transition-all flex items-center gap-2 shrink-0 ${
+                                                cvMode === 'replace'
+                                                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-100'
+                                                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100'
+                                            }`}
+                                        >
+                                            {uploadingCv
+                                                ? t('uploadingFile')
+                                                : cvMode === 'replace'
+                                                ? `🔄 ${t('replaceCurrentFileBtn')}`
+                                                : `⬆️ ${t('uploadNewVersionBtn')}`}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            {/* Bottom Card: Attachments & Versions History List */}
+                            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
+                                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                                    <h4 className="font-black text-sm text-slate-800">
+                                        {t('attachmentsHistoryTitle')} ({attachmentsList.length})
+                                    </h4>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="p-5 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center mb-8 text-xs text-slate-500">
-                                لا يوجد ملف سيرة ذاتية مرفوع حالياً لهذا المتقدم.
-                            </div>
-                        )}
 
-                        {/* Upload Form */}
-                        <form onSubmit={handleUploadCv} className="space-y-4">
-                            <label className="block text-xs font-bold text-slate-700">
-                                رفع ملف سيرة ذاتية جديد (PDF, DOC, DOCX حتى 10MB)
-                            </label>
-                            <input
-                                type="file"
-                                accept=".pdf,.doc,.docx"
-                                onChange={e => setCvFile(e.target.files[0])}
-                                className="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
-                            />
+                                {attachmentsList.length === 0 ? (
+                                    <p className="py-8 text-center text-xs text-slate-400">
+                                        {t('noAttachmentsFound')}
+                                    </p>
+                                ) : (
+                                    <div className="divide-y divide-slate-100">
+                                        {attachmentsList.map(att => (
+                                            <div
+                                                key={att.id || att.version}
+                                                className={`py-4 px-3 rounded-2xl flex flex-wrap items-center justify-between gap-4 transition-colors ${
+                                                    att.is_current ? 'bg-indigo-50/40' : 'hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <div className="flex items-start gap-3 min-w-0">
+                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-black font-mono shrink-0 ${
+                                                        att.is_current
+                                                            ? 'bg-indigo-600 text-white'
+                                                            : 'bg-slate-200 text-slate-700'
+                                                    }`}>
+                                                        v{att.version || 1}
+                                                    </span>
+                                                    <div className="min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="font-bold text-xs text-slate-800 truncate">
+                                                                {att.original_name || att.filename}
+                                                            </span>
+                                                            {att.is_current && (
+                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                                                    {t('activeCvBadge')}
+                                                                </span>
+                                                            )}
+                                                            {att.file_exists === false && (
+                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                                                                    ⚠️ {t('fileMissingWarning')}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-wrap items-center gap-3 mt-1 text-[11px] text-slate-500">
+                                                            {att.size > 0 && <span className="font-mono">{formatBytes(att.size)}</span>}
+                                                            {att.uploaded_at && (
+                                                                <span>
+                                                                    🕒 {new Date(att.uploaded_at).toLocaleString(isRtl ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                                </span>
+                                                            )}
+                                                            {att.uploaded_by && <span>👤 {att.uploaded_by}</span>}
+                                                            {att.notes && <span className="text-slate-600 font-medium">📝 {att.notes}</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                            <button
-                                type="submit"
-                                disabled={uploadingCv || !cvFile}
-                                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 disabled:opacity-50 transition-all flex items-center gap-2"
-                            >
-                                {uploadingCv ? 'جاري رفع الملف...' : '⬆️ حفظ ورفع السيرة الذاتية'}
-                            </button>
-                        </form>
-                    </div>
-                )}
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {/* Preview */}
+                                                    <IconButton
+                                                        size="sm"
+                                                        variant="active"
+                                                        href={`${att.path}?name=${encodeURIComponent(att.original_name || att.filename || 'cv.pdf')}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        tooltip={t('previewFile')}
+                                                        icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                    />
+
+                                                    {/* Download */}
+                                                    <IconButton
+                                                        size="sm"
+                                                        variant="success"
+                                                        href={`${att.path}?download=1&name=${encodeURIComponent(att.original_name || att.filename || 'cv.pdf')}`}
+                                                        tooltip={t('downloadFile')}
+                                                        icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                    />
+
+                                                    {/* Set as Active (if not current) */}
+                                                    {!att.is_current && (
+                                                        <IconButton
+                                                            size="sm"
+                                                            variant="secondary"
+                                                            disabled={activatingAttId === att.id}
+                                                            onClick={() => handleActivateAttachment(att.id)}
+                                                            tooltip={t('setAsActiveCv')}
+                                                            icon="M5 13l4 4L19 7"
+                                                        />
+                                                    )}
+
+                                                    {/* Replace this record */}
+                                                    <IconButton
+                                                        size="sm"
+                                                        variant="warning"
+                                                        onClick={() => startReplaceAttachment(att)}
+                                                        tooltip={t('replaceThisFile')}
+                                                        icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                                    />
+
+                                                    {/* Delete this record */}
+                                                    <IconButton
+                                                        size="sm"
+                                                        variant="danger"
+                                                        disabled={deletingAttId === att.id}
+                                                        onClick={() => handleDeleteAttachment(att.id)}
+                                                        tooltip={t('deleteAttachment')}
+                                                        icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
 
                 {/* Tab 3: Social Links (روابط ملفات سوشيال متعدد) */}
                 {activeTab === 'social' && (

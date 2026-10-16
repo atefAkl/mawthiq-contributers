@@ -30,6 +30,7 @@ class Applicant extends Model
         'linkedin_url',
         'github_url',
         'resume_path',
+        'attachments',
         'cover_letter',
         'skills',
         'social_links',
@@ -42,6 +43,7 @@ class Applicant extends Model
     ];
 
     protected $casts = [
+        'attachments' => 'array',
         'skills' => 'array',
         'social_links' => 'array',
         'portfolio_items' => 'array',

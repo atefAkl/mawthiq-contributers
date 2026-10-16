@@ -75,7 +75,6 @@ export default function IconButton({
                 target={target}
                 rel={rel}
                 onClick={onClick}
-                title={tooltip}
                 aria-label={tooltip}
                 className={baseClasses}
             >
@@ -90,7 +89,6 @@ export default function IconButton({
             type={type}
             onClick={onClick}
             disabled={disabled}
-            title={tooltip}
             aria-label={tooltip}
             className={baseClasses}
         >
