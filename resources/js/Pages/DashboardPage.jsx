@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../layouts/AppLayout';
+import PageHeader from '../components/PageHeader';
+import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -12,6 +14,7 @@ export default function DashboardPage({ currentRoute, navigate }) {
     const [loading, setLoading] = useState(true);
 
     const loadStats = async () => {
+        setLoading(true);
         try {
             const data = await api.get('/reports/dashboard');
             setStats(data);
@@ -44,44 +47,36 @@ export default function DashboardPage({ currentRoute, navigate }) {
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-6">
-                {/* Welcome Banner */}
-                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg shadow-slate-200/50">
-                    <div className="relative z-10 max-w-2xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-xs mb-3 border border-white/10">
-                            <span>👋</span>
-                            <span>{t('dashboard')} &bull; {user?.role?.display_name_ar || 'مدير'}</span>
-                        </div>
-                        <h2 className="text-xl sm:text-2xl font-black mb-2">
-                            مرحباً بك، {user?.name || 'زميلنا العزيز'}
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                            لوحة متابعة وإدارة المتقدمين والمساهمين. يمكنك هنا فحص مسار المرشحين، جدولة المقابلات، تسجيل نتائج التقييم، وتوليد التقارير.
-                        </p>
-
-                        <div className="mt-5 flex flex-wrap gap-2.5">
-                            {hasPermission('create_applicants') && (
-                                <button
-                                    onClick={() => navigate('#/applicants?action=new')}
-                                    className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold transition-all shadow-sm"
-                                >
-                                    + {t('addApplicant')}
-                                </button>
-                            )}
-                            <button
-                                onClick={() => navigate('#/interviews')}
-                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/10"
-                            >
-                                📅 {t('interviews')}
-                            </button>
-                            <button
-                                onClick={() => navigate('#/reports')}
-                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/10"
-                            >
-                                📊 {t('reports')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                {/* Standardized Page Header Box */}
+                <PageHeader
+                    title={t('dashboard')}
+                    subtitle={`مرحباً بك ${user?.name || 'زميلنا العزيز'} — لوحة متابعة وإدارة المتقدمين والمساهمين، فحص مسار المرشحين، وجدولة المقابلات.`}
+                    icon="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                >
+                    <IconButton
+                        onClick={loadStats}
+                        tooltip="تحديث الإحصائيات"
+                        icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                    <IconButton
+                        onClick={() => navigate('#/reports')}
+                        tooltip={t('reports')}
+                        icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                    <IconButton
+                        onClick={() => navigate('#/interviews')}
+                        tooltip={t('interviews')}
+                        icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                    {hasPermission('create_applicants') && (
+                        <IconButton
+                            variant="primary"
+                            onClick={() => navigate('#/applicants?action=new')}
+                            tooltip={t('addApplicant')}
+                            icon="M12 4v16m8-8H4"
+                        />
+                    )}
+                </PageHeader>
 
                 {/* Key Metrics Cards Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -201,12 +196,12 @@ export default function DashboardPage({ currentRoute, navigate }) {
                             <h3 className="font-bold text-sm text-slate-800">
                                 أحدث المتقدمين للمنصة
                             </h3>
-                            <button
+                            <IconButton
+                                size="sm"
                                 onClick={() => navigate('#/applicants')}
-                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800"
-                            >
-                                عرض الكل &larr;
-                            </button>
+                                tooltip="عرض كافة المتقدمين"
+                                icon="M17 8l4 4m0 0l-4 4m4-4H3"
+                            />
                         </div>
 
                         <div className="divide-y divide-slate-100">
@@ -247,12 +242,12 @@ export default function DashboardPage({ currentRoute, navigate }) {
                             <h3 className="font-bold text-sm text-slate-800">
                                 المقابلات القادمة المجدولة
                             </h3>
-                            <button
+                            <IconButton
+                                size="sm"
                                 onClick={() => navigate('#/interviews')}
-                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800"
-                            >
-                                جدول المقابلات &larr;
-                            </button>
+                                tooltip="عرض جدول المقابلات"
+                                icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
                         </div>
 
                         <div className="divide-y divide-slate-100">
@@ -273,14 +268,15 @@ export default function DashboardPage({ currentRoute, navigate }) {
                                             </p>
                                         </div>
                                         {item.meeting_link ? (
-                                            <a
+                                            <IconButton
+                                                size="sm"
+                                                variant="active"
                                                 href={item.meeting_link}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                                            >
-                                                دخول الرابط
-                                            </a>
+                                                tooltip="فتح رابط الاجتماع"
+                                                icon="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                            />
                                         ) : (
                                             <span className="text-[11px] text-slate-400">حضوري</span>
                                         )}

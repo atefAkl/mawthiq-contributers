@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../layouts/AppLayout';
+import PageHeader from '../components/PageHeader';
+import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -93,8 +95,18 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
     };
 
     useEffect(() => {
+        if (currentRoute.includes('action=new')) {
+            setCreateModalOpen(true);
+        }
+        if (currentRoute.includes('status=')) {
+            const match = currentRoute.match(/status=([a-z_]+)/);
+            if (match && match[1]) {
+                setActiveStatus(match[1]);
+                return;
+            }
+        }
         loadApplicants(1, activeStatus, search);
-    }, [activeStatus]);
+    }, [activeStatus, currentRoute]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -245,62 +257,46 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-6">
-                {/* Header Title & Actions */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h2 className="text-xl sm:text-2xl font-black text-slate-800">
-                            {t('applicants')}
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                            إدارة طلبات المتقدمين، متابعة المقابلات، والترقية عبر المراحل الخمس.
-                        </p>
-                    </div>
+                {/* Standardized Page Header Box */}
+                <PageHeader
+                    title={t('applicants')}
+                    subtitle="إدارة طلبات المتقدمين، متابعة المقابلات، والترقية عبر المراحل الخمس."
+                    icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                >
+                    {/* View Switcher: Table */}
+                    <IconButton
+                        variant={viewMode === 'table' ? 'active' : 'secondary'}
+                        onClick={() => setViewMode('table')}
+                        tooltip={t('tableView')}
+                        icon="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* View Switcher */}
-                        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-                            <button
-                                onClick={() => setViewMode('table')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                    viewMode === 'table' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                📋 {t('tableView')}
-                            </button>
-                            <button
-                                onClick={() => setViewMode('kanban')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                    viewMode === 'kanban' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                🗂️ {t('kanbanView')}
-                            </button>
-                        </div>
+                    {/* View Switcher: Kanban */}
+                    <IconButton
+                        variant={viewMode === 'kanban' ? 'active' : 'secondary'}
+                        onClick={() => setViewMode('kanban')}
+                        tooltip={t('kanbanView')}
+                        icon="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+                    />
 
-                        {/* Export CSV */}
-                        <a
-                            href="/api/applicants/export"
-                            download
-                            className="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs"
-                        >
-                            <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span>{t('exportCsv')}</span>
-                        </a>
+                    {/* Export CSV (Document with download arrow like reference screenshot) */}
+                    <IconButton
+                        href="/api/applicants/export"
+                        download
+                        tooltip={t('exportCsv')}
+                        icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
 
-                        {/* Add Applicant Button */}
-                        {hasPermission('create_applicants') && (
-                            <button
-                                onClick={() => setCreateModalOpen(true)}
-                                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-200 flex items-center gap-1.5"
-                            >
-                                <span>+</span>
-                                <span>{t('addApplicant')}</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
+                    {/* Add Applicant Primary Button (+) */}
+                    {hasPermission('create_applicants') && (
+                        <IconButton
+                            variant="primary"
+                            onClick={() => setCreateModalOpen(true)}
+                            tooltip={t('addApplicant')}
+                            icon="M12 4v16m8-8H4"
+                        />
+                    )}
+                </PageHeader>
 
                 {/* Filter Tabs & Search */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-xs space-y-3">
@@ -439,33 +435,37 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                                 <td className="px-4 py-3.5 text-center">
                                                     <div className="inline-flex items-center gap-1">
                                                         {/* View Details Standalone Page */}
-                                                        <button
+                                                        <IconButton
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            tooltipPosition="top"
                                                             onClick={() => navigate(`#/applicants/${app.id}`)}
-                                                            className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                                                            title="عرض وتعديل ملف المتقدم"
+                                                            tooltip="عرض وتعديل ملف المتقدم"
                                                         >
                                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                             </svg>
-                                                        </button>
+                                                        </IconButton>
 
                                                         {/* Change Status / Promote (Icon Button) */}
                                                         {hasPermission('promote_applicants') && (
-                                                            <button
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="warning"
+                                                                tooltipPosition="top"
                                                                 onClick={() => openStatusModal(app)}
-                                                                className="p-1.5 rounded-lg text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-colors border border-amber-200/70"
-                                                                title="ترقية وتغيير حالة المتقدم"
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                                                </svg>
-                                                            </button>
+                                                                tooltip="ترقية وتغيير حالة المتقدم"
+                                                                icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                                                            />
                                                         )}
 
                                                         {/* Schedule Interview */}
                                                         {hasPermission('schedule_interviews') && (
-                                                            <button
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                tooltipPosition="top"
                                                                 onClick={() => {
                                                                     setSelectedApplicant(app);
                                                                     setInterviewForm({
@@ -477,43 +477,37 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                                                     });
                                                                     setInterviewModalOpen(true);
                                                                 }}
-                                                                className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                                                                title="جدولة مقابلة شخصية"
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                </svg>
-                                                            </button>
+                                                                tooltip="جدولة مقابلة شخصية"
+                                                                icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                                            />
                                                         )}
 
                                                         {/* Send Email */}
                                                         {hasPermission('send_emails') && (
-                                                            <button
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                tooltipPosition="top"
                                                                 onClick={() => {
                                                                     setSelectedApplicant(app);
                                                                     setEmailForm({ subject: '', body: '' });
                                                                     setEmailModalOpen(true);
                                                                 }}
-                                                                className="p-1.5 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
-                                                                title="إرسال رسالة بريد إلكتروني"
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                                </svg>
-                                                            </button>
+                                                                tooltip="إرسال رسالة بريد إلكتروني"
+                                                                icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                                            />
                                                         )}
 
                                                         {/* Delete Applicant */}
                                                         {hasPermission('delete_applicants') && (
-                                                            <button
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="danger"
+                                                                tooltipPosition="top"
                                                                 onClick={() => confirmDeleteApplicant(app)}
-                                                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                                                                title="حذف المتقدم نهائياً"
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                            </button>
+                                                                tooltip="حذف المتقدم نهائياً"
+                                                                icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                            />
                                                         )}
                                                     </div>
                                                 </td>
@@ -606,27 +600,24 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                                             <span className="truncate max-w-[130px]">{app.city || app.country || 'غير محدد'}</span>
                                                             <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
                                                                 {hasPermission('promote_applicants') && (
-                                                                    <button
+                                                                    <IconButton
+                                                                        size="sm"
+                                                                        variant="warning"
+                                                                        tooltipPosition="top"
                                                                         onClick={() => openStatusModal(app)}
-                                                                        className="p-1 rounded-md text-amber-600 hover:bg-amber-50 font-bold flex items-center gap-0.5"
-                                                                        title="ترقية وتغيير الحالة"
-                                                                    >
-                                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                                                        </svg>
-                                                                        <span>ترقية</span>
-                                                                    </button>
+                                                                        tooltip="ترقية وتغيير الحالة"
+                                                                        icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                                                                    />
                                                                 )}
                                                                 {hasPermission('delete_applicants') && (
-                                                                    <button
+                                                                    <IconButton
+                                                                        size="sm"
+                                                                        variant="danger"
+                                                                        tooltipPosition="top"
                                                                         onClick={() => confirmDeleteApplicant(app)}
-                                                                        className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                                                                        title="حذف المتقدم"
-                                                                    >
-                                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                        </svg>
-                                                                    </button>
+                                                                        tooltip="حذف المتقدم"
+                                                                        icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                                    />
                                                                 )}
                                                             </div>
                                                         </div>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import AppLayout from '../layouts/AppLayout';
+import PageHeader from '../components/PageHeader';
+import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -24,7 +26,7 @@ export default function ProfilePage({ currentRoute, navigate }) {
     const [changingPassword, setChangingPassword] = useState(false);
 
     const handleUpdateProfile = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setUpdatingProfile(true);
 
         try {
@@ -72,15 +74,20 @@ export default function ProfilePage({ currentRoute, navigate }) {
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-6 max-w-3xl">
-                {/* Header */}
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-800">
-                        {t('profile')} &bull; إعدادات الحساب الشخصي
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                        تعديل البيانات الأساسية، البريد الإلكتروني، وتغيير كلمة المرور.
-                    </p>
-                </div>
+                {/* Standardized Page Header Box */}
+                <PageHeader
+                    title={`${t('profile')} • إعدادات الحساب الشخصي`}
+                    subtitle="تعديل البيانات الأساسية، البريد الإلكتروني، وتغيير كلمة المرور."
+                    icon="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                >
+                    <IconButton
+                        variant="primary"
+                        onClick={handleUpdateProfile}
+                        disabled={updatingProfile}
+                        tooltip={updatingProfile ? 'جاري الحفظ...' : 'حفظ البيانات الشخصية'}
+                        icon="M5 13l4 4L19 7"
+                    />
+                </PageHeader>
 
                 {/* Account Summary Banner */}
                 <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex items-center gap-4">

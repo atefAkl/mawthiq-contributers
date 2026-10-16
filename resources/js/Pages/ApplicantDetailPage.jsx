@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../layouts/AppLayout';
+import PageHeader from '../components/PageHeader';
+import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -455,92 +457,83 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-6">
-                {/* Top Breadcrumb & Navigation */}
-                <div className="flex items-center justify-between">
-                    <button
-                        onClick={() => navigate('#/applicants')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-xs"
-                    >
-                        <span>&larr;</span>
-                        <span>العودة لقائمة المتقدمين</span>
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400 font-mono">
-                            {applicant.application_no}
-                        </span>
-                        {getStatusBadge(applicant.status)}
-                    </div>
-                </div>
-
-                {/* Hero Header Card */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs relative overflow-hidden">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 to-sky-500 text-white font-black text-2xl sm:text-3xl flex items-center justify-center shadow-lg shadow-indigo-100 shrink-0">
-                                {applicant.full_name?.charAt(0) || 'A'}
-                            </div>
-                            <div>
-                                <h1 className="text-xl sm:text-2xl font-black text-slate-800">
-                                    {applicant.full_name}
-                                </h1>
-                                <p className="text-xs sm:text-sm text-indigo-700 font-semibold mt-0.5">
-                                    {applicant.position}
-                                </p>
-                                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-500">
-                                    <span>📧 {applicant.email}</span>
-                                    <span>📞 {applicant.phone}</span>
-                                    <span>📍 {applicant.city ? `${applicant.city}، ` : ''}{applicant.country}</span>
-                                    {applicant.age && <span>🎂 {applicant.age} سنة</span>}
-                                </div>
-                            </div>
+                {/* Standardized Page Header Box */}
+                <PageHeader
+                    title={`ملف المتقدم: ${applicant.full_name}`}
+                    subtitle={`${applicant.position} • إدارة البيانات الشخصية، تقييم المقابلات، السيرة الذاتية، والمراسلات.`}
+                    icon="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    badge={
+                        <div className="inline-flex items-center gap-2">
+                            <span className="text-xs text-slate-400 font-mono">{applicant.application_no}</span>
+                            {getStatusBadge(applicant.status)}
                         </div>
+                    }
+                >
+                    {/* Back to Applicants List */}
+                    <IconButton
+                        onClick={() => navigate('#/applicants')}
+                        tooltip="العودة لقائمة المتقدمين"
+                        icon="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
 
-                        {/* Fast Action Buttons */}
-                        <div className="flex flex-wrap items-center gap-2">
-                            {hasPermission('promote_applicants') && (
-                                <button
-                                    onClick={() => {
-                                        setToStatus(applicant.status === 'applicant' ? 'participant' : applicant.status === 'participant' ? 'probation' : 'accepted');
-                                        setStatusModalOpen(true);
-                                    }}
-                                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all flex items-center gap-1.5"
-                                >
-                                    <span>⚡</span>
-                                    <span>{t('changeStatus')}</span>
-                                </button>
-                            )}
+                    {/* Download / Upload CV */}
+                    {applicant.resume_path ? (
+                        <IconButton
+                            variant="success"
+                            href={applicant.resume_path}
+                            target="_blank"
+                            rel="noreferrer"
+                            download
+                            tooltip="تحميل السيرة الذاتية (CV)"
+                            icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                    ) : (
+                        <IconButton
+                            onClick={() => setActiveTab('resume')}
+                            tooltip="رفع السيرة الذاتية (CV)"
+                            icon="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                        />
+                    )}
 
-                            {hasPermission('schedule_interviews') && (
-                                <button
-                                    onClick={() => setScheduleModalOpen(true)}
-                                    className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs transition-all flex items-center gap-1.5"
-                                >
-                                    <span>📅</span>
-                                    <span>{t('scheduleInterview')}</span>
-                                </button>
-                            )}
+                    {/* Schedule Interview */}
+                    {hasPermission('schedule_interviews') && (
+                        <IconButton
+                            onClick={() => setScheduleModalOpen(true)}
+                            tooltip={t('scheduleInterview')}
+                            icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                    )}
 
-                            {applicant.resume_path ? (
-                                <a
-                                    href={applicant.resume_path}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    download
-                                    className="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all flex items-center gap-1.5"
-                                >
-                                    <span>📄</span>
-                                    <span>تحميل السيرة الذاتية (CV)</span>
-                                </a>
-                            ) : (
-                                <button
-                                    onClick={() => setActiveTab('resume')}
-                                    className="px-4 py-2 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-700 text-xs font-bold transition-all flex items-center gap-1.5"
-                                >
-                                    <span>⬆️</span>
-                                    <span>رفع السيرة الذاتية</span>
-                                </button>
-                            )}
+                    {/* Change / Promote Status (Primary Action) */}
+                    {hasPermission('promote_applicants') && (
+                        <IconButton
+                            variant="primary"
+                            onClick={() => {
+                                setToStatus(applicant.status === 'applicant' ? 'participant' : applicant.status === 'participant' ? 'probation' : 'accepted');
+                                setStatusModalOpen(true);
+                            }}
+                            tooltip={t('changeStatus')}
+                            icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                        />
+                    )}
+                </PageHeader>
+
+                {/* Applicant Summary Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-500 text-white font-black text-2xl flex items-center justify-center shadow-md shadow-indigo-100 shrink-0">
+                            {applicant.full_name?.charAt(0) || 'A'}
+                        </div>
+                        <div>
+                            <h3 className="text-base font-black text-slate-800">
+                                {applicant.full_name}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
+                                <span>📧 {applicant.email}</span>
+                                <span>📞 {applicant.phone}</span>
+                                <span>📍 {applicant.city ? `${applicant.city}، ` : ''}{applicant.country}</span>
+                                {applicant.age && <span>🎂 {applicant.age} سنة</span>}
+                            </div>
                         </div>
                     </div>
                 </div>

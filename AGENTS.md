@@ -45,3 +45,9 @@ php artisan boost:install
 
 Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
 </laravel-boost-guidelines>
+
+## Mandatory Project Governance (قواعد الحوكمة الإلزامية)
+
+1. **قراءة القرارات المعمارية قبل أي تعديل:** يجب قراءة ملف `DECISIONS.md` (في جذر المشروع وفي الكاش) قبل إجراء أي تعديل برمجي أو تصميمي لضمان عدم مخالفة أي قرار معماري معتمد (مثل الاعتماد على الأزرار الأيقونية مع تلميحات التمرير وشريط العنوان الموحد).
+2. **تحديث سجل التقدم (Progress Log):** يجب مراجعة وتحديث ملف `PROGRESS_LOG.md` (في جذر المشروع وفي الكاش) بعد كل تعديل لتوثيق ما تم إنجازه بدقة.
+

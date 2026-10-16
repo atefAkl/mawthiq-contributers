@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../layouts/AppLayout';
+import PageHeader from '../components/PageHeader';
+import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -145,49 +147,54 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h2 className="text-xl sm:text-2xl font-black text-slate-800">
-                            {t('usersAndRoles')}
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                            التحكم بالمستخدمين الإداريين ومصفوفة الصلاحيات المبنية على الأدوار (RBAC).
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {activeTab === 'users' && (
-                            <button
-                                onClick={openCreateUserModal}
-                                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-100 flex items-center gap-1.5"
-                            >
-                                <span>+</span>
-                                <span>{t('addUser')}</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Sub-Tabs */}
-                <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200 inline-flex">
-                    <button
+                {/* Standardized Page Header Box */}
+                <PageHeader
+                    title={t('usersAndRoles')}
+                    subtitle="التحكم بالمستخدمين الإداريين ومصفوفة الصلاحيات المبنية على الأدوار (RBAC)."
+                    icon="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                >
+                    {/* Sub-Tab: Users */}
+                    <IconButton
+                        variant={activeTab === 'users' ? 'active' : 'secondary'}
                         onClick={() => setActiveTab('users')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                            activeTab === 'users' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                    >
-                        👥 {t('manageUsers')} ({users.length})
-                    </button>
-                    <button
+                        tooltip={`${t('manageUsers')} (${users.length})`}
+                        icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+
+                    {/* Sub-Tab: Roles & Permissions Matrix */}
+                    <IconButton
+                        variant={activeTab === 'roles' ? 'active' : 'secondary'}
                         onClick={() => setActiveTab('roles')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                            activeTab === 'roles' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                    >
-                        🔐 {t('permissionsMatrix')} ({roles.length} أدوار)
-                    </button>
-                </div>
+                        tooltip={`${t('permissionsMatrix')} (${roles.length} أدوار)`}
+                        icon="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
+
+                    {/* Refresh */}
+                    <IconButton
+                        onClick={loadData}
+                        tooltip="تحديث البيانات"
+                        icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+
+                    {/* Primary Action: Add User or Save Role Permissions */}
+                    {activeTab === 'users' && (
+                        <IconButton
+                            variant="primary"
+                            onClick={openCreateUserModal}
+                            tooltip={t('addUser')}
+                            icon="M12 4v16m8-8H4"
+                        />
+                    )}
+                    {activeTab === 'roles' && selectedRole?.name !== 'super_admin' && (
+                        <IconButton
+                            variant="primary"
+                            onClick={handleSaveRolePermissions}
+                            disabled={savingPermissions}
+                            tooltip={savingPermissions ? 'جاري الحفظ...' : `حفظ صلاحيات (${selectedRole?.display_name_ar || ''})`}
+                            icon="M5 13l4 4L19 7"
+                        />
+                    )}
+                </PageHeader>
 
                 {/* Tab 1: Users Table */}
                 {activeTab === 'users' && (
@@ -231,19 +238,23 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                                             </td>
                                             <td className="px-5 py-3.5 text-center">
                                                 <div className="inline-flex items-center gap-1">
-                                                    <button
+                                                    <IconButton
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        tooltipPosition="top"
                                                         onClick={() => openEditUserModal(u)}
-                                                        className="px-2.5 py-1 rounded-lg text-indigo-600 hover:bg-indigo-50 font-bold"
-                                                    >
-                                                        {t('edit')}
-                                                    </button>
+                                                        tooltip={t('edit')}
+                                                        icon="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                    />
                                                     {u.id !== currentUser?.id && (
-                                                        <button
+                                                        <IconButton
+                                                            size="sm"
+                                                            variant="danger"
+                                                            tooltipPosition="top"
                                                             onClick={() => handleDeleteUser(u.id)}
-                                                            className="px-2.5 py-1 rounded-lg text-rose-600 hover:bg-rose-50 font-bold"
-                                                        >
-                                                            {t('delete')}
-                                                        </button>
+                                                            tooltip={t('delete')}
+                                                            icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                        />
                                                     )}
                                                 </div>
                                             </td>
@@ -297,13 +308,13 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                                 </div>
 
                                 {selectedRole?.name !== 'super_admin' && (
-                                    <button
+                                    <IconButton
+                                        variant="primary"
                                         onClick={handleSaveRolePermissions}
                                         disabled={savingPermissions}
-                                        className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 disabled:opacity-50"
-                                    >
-                                        {savingPermissions ? 'جاري الحفظ...' : t('save')}
-                                    </button>
+                                        tooltip={savingPermissions ? 'جاري الحفظ...' : t('save')}
+                                        icon="M5 13l4 4L19 7"
+                                    />
                                 )}
                             </div>
 

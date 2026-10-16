@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../layouts/AppLayout';
+import PageHeader from '../components/PageHeader';
+import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -82,26 +84,24 @@ export default function InterviewsPage({ currentRoute, navigate }) {
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h2 className="text-xl sm:text-2xl font-black text-slate-800">
-                            {t('interviews')}
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                            جدولة المواعيد، روابط الاجتماعات، وتسجيل تقييمات ودرجات المحكمين.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => navigate('#/applicants')}
-                            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-100"
-                        >
-                            + اختيار متقدم وجدولة مقابلة
-                        </button>
-                    </div>
-                </div>
+                {/* Standardized Page Header Box */}
+                <PageHeader
+                    title={t('interviews')}
+                    subtitle="جدولة المواعيد، روابط الاجتماعات، وتسجيل تقييمات ودرجات المحكمين."
+                    icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                >
+                    <IconButton
+                        onClick={() => loadInterviews(activeStatus)}
+                        tooltip="تحديث قائمة المقابلات"
+                        icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                    <IconButton
+                        variant="primary"
+                        onClick={() => navigate('#/applicants')}
+                        tooltip="اختيار متقدم وجدولة مقابلة"
+                        icon="M12 4v16m8-8H4"
+                    />
+                </PageHeader>
 
                 {/* Filter Tabs */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-2 sm:p-3 shadow-xs flex items-center gap-1.5 overflow-x-auto">
@@ -219,27 +219,40 @@ export default function InterviewsPage({ currentRoute, navigate }) {
 
                                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                                     {item.meeting_link ? (
-                                        <a
+                                        <IconButton
+                                            size="sm"
+                                            variant="active"
+                                            tooltipPosition="top"
                                             href={item.meeting_link}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1 transition-colors"
-                                        >
-                                            🌐 رابط الاجتماع
-                                        </a>
+                                            tooltip="فتح رابط الاجتماع"
+                                            icon="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                        />
                                     ) : (
                                         <span className="text-[11px] text-slate-400">حضوري في المقر</span>
                                     )}
 
-                                    {/* Record Results Button */}
-                                    {hasPermission('record_interview_results') && (
-                                        <button
-                                            onClick={() => openRecordResults(item)}
-                                            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors"
-                                        >
-                                            {item.status === 'completed' ? 'تعديل التقييم' : 'تسجيل النتيجة'}
-                                        </button>
-                                    )}
+                                    <div className="flex items-center gap-1.5">
+                                        <IconButton
+                                            size="sm"
+                                            tooltipPosition="top"
+                                            onClick={() => navigate(`#/applicants/${item.applicant_id}`)}
+                                            tooltip="عرض ملف المتقدم"
+                                            icon="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                        />
+                                        {/* Record Results Button */}
+                                        {hasPermission('record_interview_results') && (
+                                            <IconButton
+                                                size="sm"
+                                                variant="primary"
+                                                tooltipPosition="top"
+                                                onClick={() => openRecordResults(item)}
+                                                tooltip={item.status === 'completed' ? 'تعديل تقييم المقابلة' : 'تسجيل نتيجة وتقييم المقابلة'}
+                                                icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            />
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../layouts/AppLayout';
+import PageHeader from '../components/PageHeader';
+import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -139,25 +141,25 @@ export default function SettingsPage({ currentRoute, navigate }) {
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-6 max-w-4xl">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h2 className="text-xl sm:text-2xl font-black text-slate-800">
-                            {t('settings')}
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                            التحكم بالهوية، شروط التقديم، خادم البريد SMTP، والأدوار المتاحة.
-                        </p>
-                    </div>
-
-                    <button
+                {/* Standardized Page Header Box */}
+                <PageHeader
+                    title={t('settings')}
+                    subtitle="التحكم بالهوية، شروط التقديم، خادم البريد SMTP، والأدوار المتاحة."
+                    icon="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                >
+                    <IconButton
+                        onClick={loadSettings}
+                        tooltip="إعادة تحميل الإعدادات"
+                        icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                    <IconButton
+                        variant="primary"
                         onClick={handleSaveSettings}
                         disabled={saving}
-                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-100 disabled:opacity-50"
-                    >
-                        {saving ? 'جاري الحفظ...' : '💾 ' + t('save')}
-                    </button>
-                </div>
+                        tooltip={saving ? 'جاري الحفظ...' : t('save')}
+                        icon="M5 13l4 4L19 7"
+                    />
+                </PageHeader>
 
                 <form onSubmit={handleSaveSettings} className="space-y-6">
                     {/* General Settings */}

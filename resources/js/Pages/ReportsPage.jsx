@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../layouts/AppLayout';
+import PageHeader from '../components/PageHeader';
+import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
@@ -12,6 +14,7 @@ export default function ReportsPage({ currentRoute, navigate }) {
     const [loading, setLoading] = useState(true);
 
     const loadReportData = async () => {
+        setLoading(true);
         try {
             const res = await api.get('/reports/dashboard');
             setData(res);
@@ -46,36 +49,31 @@ export default function ReportsPage({ currentRoute, navigate }) {
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-6 print:space-y-4">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
-                    <div>
-                        <h2 className="text-xl sm:text-2xl font-black text-slate-800">
-                            {t('reports')}
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                            مؤشرات الأداء، مراحل قمع الاستقطاب، نسب القبول، وتوزيع الأدوار.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={printReport}
-                            className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
-                        >
-                            <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                            </svg>
-                            <span>طباعة التقرير (Print / PDF)</span>
-                        </button>
-                        <a
-                            href="/api/applicants/export"
-                            download
-                            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-100 flex items-center gap-1.5"
-                        >
-                            <span>تصدير البيانات (CSV)</span>
-                        </a>
-                    </div>
-                </div>
+                {/* Standardized Page Header Box */}
+                <PageHeader
+                    className="print:hidden"
+                    title={t('reports')}
+                    subtitle="مؤشرات الأداء، مراحل قمع الاستقطاب، نسب القبول، وتوزيع الأدوار."
+                    icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                >
+                    <IconButton
+                        onClick={loadReportData}
+                        tooltip="تحديث بيانات التقارير"
+                        icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                    <IconButton
+                        onClick={printReport}
+                        tooltip="طباعة التقرير (Print / PDF)"
+                        icon="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                    />
+                    <IconButton
+                        variant="primary"
+                        href="/api/applicants/export"
+                        download
+                        tooltip="تصدير البيانات (CSV)"
+                        icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                </PageHeader>
 
                 {/* Print Title Only */}
                 <div className="hidden print:block text-center pb-4 border-b border-slate-300">

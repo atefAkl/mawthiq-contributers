@@ -157,3 +157,9 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
 </laravel-boost-guidelines>
+
+## Mandatory Project Governance (قواعد الحوكمة الإلزامية)
+
+1. **قراءة القرارات المعمارية قبل أي تعديل:** يجب قراءة ملف `DECISIONS.md` قبل إجراء أي تعديل برمجي أو تصميمي لضمان عدم مخالفة أي قرار معماري معتمد.
+2. **تحديث سجل التقدم (Progress Log):** يجب مراجعة وتحديث ملف `PROGRESS_LOG.md` بعد كل تعديل لتوثيق ما تم إنجازه.
+

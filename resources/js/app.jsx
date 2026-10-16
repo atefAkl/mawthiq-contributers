@@ -8,17 +8,17 @@ import { LanguageProvider } from './context/LanguageContext';
 import { ToastProvider } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-import LoginPage from './pages/LoginPage';
-import PublicApplyPage from './pages/PublicApplyPage';
-import DashboardPage from './pages/DashboardPage';
-import ApplicantsPage from './pages/ApplicantsPage';
-import ApplicantDetailPage from './pages/ApplicantDetailPage';
-import InterviewsPage from './pages/InterviewsPage';
-import ReportsPage from './pages/ReportsPage';
-import EmailsPage from './pages/EmailsPage';
-import UsersAndPermissionsPage from './pages/UsersAndPermissionsPage';
-import SettingsPage from './pages/SettingsPage';
-import ProfilePage from './pages/ProfilePage';
+import LoginPage from './Pages/LoginPage';
+import PublicApplyPage from './Pages/PublicApplyPage';
+import DashboardPage from './Pages/DashboardPage';
+import ApplicantsPage from './Pages/ApplicantsPage';
+import ApplicantDetailPage from './Pages/ApplicantDetailPage';
+import InterviewsPage from './Pages/InterviewsPage';
+import ReportsPage from './Pages/ReportsPage';
+import EmailsPage from './Pages/EmailsPage';
+import UsersAndPermissionsPage from './Pages/UsersAndPermissionsPage';
+import SettingsPage from './Pages/SettingsPage';
+import ProfilePage from './Pages/ProfilePage';
 
 function Router() {
     const { isAuthenticated, loading } = useAuth();
