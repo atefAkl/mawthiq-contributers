@@ -83,6 +83,12 @@ class DatabaseSeeder extends Seeder
             $permMap['view_applicants'], $permMap['view_reports']
         ]);
 
+        $contributorRole = Role::firstOrCreate(['name' => 'contributor'], [
+            'display_name_ar' => 'مساهم / متقدم (Contributor)',
+            'display_name_en' => 'Contributor / Applicant',
+            'description' => 'الدور الافتراضي التلقائي للمتقدمين والمساهمين لإدارة ملفاتهم الشخصية وأوقات تفرغهم ومقابلاتهم الخاصة.'
+        ]);
+
         // 3. Admin Users
         $admin = User::firstOrCreate(['email' => 'admin@contributors.app'], [
             'name' => 'أحمد منصور (Admin)',

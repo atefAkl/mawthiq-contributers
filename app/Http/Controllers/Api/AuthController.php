@@ -66,6 +66,7 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'avatar' => $user->avatar,
                 'locale' => $user->locale ?? 'ar',
+                'working_hours' => $user->getWorkingHoursOrDefault(),
                 'role' => $user->role ? [
                     'id' => $user->role->id,
                     'name' => $user->role->name,
@@ -86,6 +87,7 @@ class AuthController extends Controller
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
             'locale' => 'nullable|string|in:ar,en',
+            'working_hours' => 'nullable|array',
         ]);
 
         $user->update($validated);

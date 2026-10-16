@@ -20,6 +20,7 @@ class User extends Authenticatable
         'avatar',
         'status',
         'locale',
+        'working_hours',
     ];
 
     protected $hidden = [
@@ -32,6 +33,24 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'working_hours' => 'array',
+        ];
+    }
+
+    public function getWorkingHoursOrDefault(): array
+    {
+        if (!empty($this->working_hours) && is_array($this->working_hours)) {
+            return $this->working_hours;
+        }
+
+        // Default standard working hours: Sunday to Thursday from 09:00 to 17:00
+        return [
+            [
+                'days' => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'],
+                'all_day' => false,
+                'from' => '09:00',
+                'to' => '17:00',
+            ]
         ];
     }
 

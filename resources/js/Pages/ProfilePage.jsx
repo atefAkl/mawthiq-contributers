@@ -19,11 +19,77 @@ export default function ProfilePage({ currentRoute, navigate }) {
     const [locale, setLocale] = useState(user?.locale || lang || 'ar');
     const [updatingProfile, setUpdatingProfile] = useState(false);
 
+    // Working Hours for Interviews State
+    const initialWorkingHours = Array.isArray(user?.working_hours) && user.working_hours.length > 0
+        ? user.working_hours
+        : [
+            {
+                days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'],
+                all_day: false,
+                from: '09:00',
+                to: '17:00',
+            }
+        ];
+    const [workingHours, setWorkingHours] = useState(initialWorkingHours);
+
     // Password State
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
     const [changingPassword, setChangingPassword] = useState(false);
+
+    const daysList = [
+        { key: 'Sunday', label: t('daySunday') },
+        { key: 'Monday', label: t('dayMonday') },
+        { key: 'Tuesday', label: t('dayTuesday') },
+        { key: 'Wednesday', label: t('dayWednesday') },
+        { key: 'Thursday', label: t('dayThursday') },
+        { key: 'Friday', label: t('dayFriday') },
+        { key: 'Saturday', label: t('daySaturday') },
+    ];
+
+    const handleAddRule = () => {
+        setWorkingHours([
+            ...workingHours,
+            {
+                days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'],
+                all_day: false,
+                from: '09:00',
+                to: '17:00',
+            }
+        ]);
+    };
+
+    const handleRemoveRule = (index) => {
+        setWorkingHours(workingHours.filter((_, i) => i !== index));
+    };
+
+    const handleToggleRuleDay = (ruleIndex, dayKey) => {
+        setWorkingHours(workingHours.map((rule, idx) => {
+            if (idx !== ruleIndex) return rule;
+            const days = rule.days || [];
+            const nextDays = days.includes(dayKey)
+                ? days.filter(d => d !== dayKey)
+                : [...days, dayKey];
+            return { ...rule, days: nextDays };
+        }));
+    };
+
+    const handleToggleAllDays = (ruleIndex) => {
+        setWorkingHours(workingHours.map((rule, idx) => {
+            if (idx !== ruleIndex) return rule;
+            const allKeys = daysList.map(d => d.key);
+            const isAll = (rule.days || []).length === allKeys.length;
+            return { ...rule, days: isAll ? [] : allKeys };
+        }));
+    };
+
+    const handleUpdateRuleField = (ruleIndex, field, value) => {
+        setWorkingHours(workingHours.map((rule, idx) => {
+            if (idx !== ruleIndex) return rule;
+            return { ...rule, [field]: value };
+        }));
+    };
 
     const handleUpdateProfile = async (e) => {
         if (e) e.preventDefault();
@@ -35,10 +101,11 @@ export default function ProfilePage({ currentRoute, navigate }) {
                 email,
                 phone,
                 locale,
+                working_hours: workingHours,
             });
             updateProfileState(res.user);
             setLang(locale);
-            showToast('تم تحديث بيانات الملف الشخصي بنجاح!', 'success');
+            showToast('تم تحديث بيانات الملف الشخصي وأوقات الدوام بنجاح!', 'success');
         } catch (err) {
             showToast(err.message || 'فشل تحديث البيانات.', 'error');
         } finally {
@@ -165,7 +232,7 @@ export default function ProfilePage({ currentRoute, navigate }) {
                             <button
                                 type="submit"
                                 disabled={updatingProfile}
-                                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-100 disabled:opacity-50"
+                                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-100 disabled:opacity-50 cursor-pointer"
                             >
                                 {updatingProfile ? 'جاري الحفظ...' : t('save')}
                             </button>
@@ -173,7 +240,132 @@ export default function ProfilePage({ currentRoute, navigate }) {
                     </form>
                 </div>
 
-                {/* Form 2: Change Password */}
+                {/* Form 2: Interviewer Working Hours (أوقات الدوام لحساب التقاطع مع المتقدمين) */}
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                <span>🗓️</span> {t('interviewerWorkingHours')}
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                {t('interviewerWorkingHoursSubtitle')}
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleAddRule}
+                            className="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition-all cursor-pointer"
+                        >
+                            {t('addAvailabilityRule')}
+                        </button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {workingHours.map((rule, idx) => (
+                            <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="text-xs font-bold text-slate-700">
+                                        فترة #{idx + 1}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleToggleAllDays(idx)}
+                                            className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                                        >
+                                            {t('allDays')}
+                                        </button>
+                                        {workingHours.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveRule(idx)}
+                                                className="text-slate-400 hover:text-rose-600 text-xs font-bold px-2 py-0.5 cursor-pointer"
+                                                title={t('removeRule')}
+                                            >
+                                                ✕ {t('removeRule')}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Days Selector Chips */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    {daysList.map(d => {
+                                        const isSelected = (rule.days || []).includes(d.key);
+                                        return (
+                                            <button
+                                                key={d.key}
+                                                type="button"
+                                                onClick={() => handleToggleRuleDay(idx, d.key)}
+                                                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                                                    isSelected
+                                                        ? 'bg-blue-600 text-white shadow-2xs'
+                                                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                {d.label} {isSelected && '✓'}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Times from/to and all day toggle */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/60 items-center">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id={`wh_allday_${idx}`}
+                                            checked={rule.all_day || false}
+                                            onChange={e => handleUpdateRuleField(idx, 'all_day', e.target.checked)}
+                                            className="rounded text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <label htmlFor={`wh_allday_${idx}`} className="text-xs font-bold text-slate-700 cursor-pointer">
+                                            {t('allDayFlexible')}
+                                        </label>
+                                    </div>
+
+                                    {!rule.all_day && (
+                                        <>
+                                            <div>
+                                                <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('fromTime')}</label>
+                                                <input
+                                                    type="time"
+                                                    value={rule.from || '09:00'}
+                                                    onChange={e => handleUpdateRuleField(idx, 'from', e.target.value)}
+                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white font-mono"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('toTime')}</label>
+                                                <input
+                                                    type="time"
+                                                    value={rule.to || '17:00'}
+                                                    onChange={e => handleUpdateRuleField(idx, 'to', e.target.value)}
+                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white font-mono"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                        <button
+                            type="button"
+                            onClick={handleUpdateProfile}
+                            disabled={updatingProfile}
+                            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-100 disabled:opacity-50 cursor-pointer"
+                        >
+                            {updatingProfile ? 'جاري الحفظ...' : 'حفظ أوقات الدوام'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Form 3: Change Password */}
                 <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
                     <h3 className="font-bold text-sm text-slate-800 pb-3 border-b border-slate-100 mb-5">
                         🔑 {t('changePassword')}

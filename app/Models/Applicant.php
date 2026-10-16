@@ -35,6 +35,7 @@ class Applicant extends Model
         'skills',
         'social_links',
         'portfolio_items',
+        'availability',
         'status',
         'rating',
         'rejection_reason',
@@ -47,6 +48,7 @@ class Applicant extends Model
         'skills' => 'array',
         'social_links' => 'array',
         'portfolio_items' => 'array',
+        'availability' => 'array',
         'experience_years' => 'integer',
         'age' => 'integer',
         'rating' => 'float',
@@ -108,5 +110,37 @@ class Applicant extends Model
     public function createdByUser()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getAvailabilityWindows(): array
+    {
+        $avail = $this->availability;
+        if (empty($avail) || !is_array($avail)) {
+            return [];
+        }
+
+        // New dynamic structure: windows array
+        if (isset($avail['windows']) && is_array($avail['windows'])) {
+            return $avail['windows'];
+        }
+
+        // Backward compatibility for legacy structure
+        if (isset($avail['preferred_days']) && is_array($avail['preferred_days']) && count($avail['preferred_days']) > 0) {
+            $period = $avail['preferred_period'] ?? 'anytime';
+            $from = $period === 'morning' ? '09:00' : ($period === 'evening' ? '16:00' : '00:00');
+            $to = $period === 'morning' ? '13:00' : ($period === 'evening' ? '20:00' : '23:59');
+            $allDay = $period === 'anytime';
+
+            return [
+                [
+                    'days' => $avail['preferred_days'],
+                    'all_day' => $allDay,
+                    'from' => $from,
+                    'to' => $to,
+                ]
+            ];
+        }
+
+        return [];
     }
 }

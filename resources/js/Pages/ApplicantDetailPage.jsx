@@ -54,7 +54,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const [sendEmailNotification, setSendEmailNotification] = useState(true);
     const [updatingStatus, setUpdatingStatus] = useState(false);
 
-    // Interview Scorecard & Custom Questions
+    // Scorecard Templates & Interview Management (ADR-010)
+    const [scorecardTemplates, setScorecardTemplates] = useState([]);
     const [activeInterview, setActiveInterview] = useState(null);
     const [questionsList, setQuestionsList] = useState([]);
     const [newQuestionText, setNewQuestionText] = useState('');
@@ -66,8 +67,58 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         interview_type: 'online',
         meeting_link: '',
         location: '',
+        scorecard_template_id: '',
         send_invitation_email: true,
     });
+    const [conflictWarning, setConflictWarning] = useState(null);
+    const [schedulingLoading, setSchedulingLoading] = useState(false);
+
+    // Google Calendar & iCalendar (.ics) integration helpers (ADR-010)
+    const getGoogleCalendarUrl = (interview, app) => {
+        if (!interview || !interview.scheduled_at || !app) return '#';
+        const title = encodeURIComponent(`مقابلة توظيف: ${app.full_name} (${app.position || 'مساهم'})`);
+        const start = new Date(interview.scheduled_at);
+        const end = new Date(start.getTime() + 45 * 60 * 1000);
+        const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+        const dates = `${formatUtc(start)}/${formatUtc(end)}`;
+        const details = encodeURIComponent(`مقابلة المرشح: ${app.full_name}\nرقم الطلب: ${app.application_no}\nرابط الاجتماع: ${interview.meeting_link || ''}\nنوع المقابلة: ${interview.interview_type === 'online' ? 'أونلاين' : 'حضوري'}`);
+        const location = encodeURIComponent(interview.meeting_link || interview.location || 'Online');
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+    };
+
+    const downloadIcsFile = (interview, app) => {
+        if (!interview || !interview.scheduled_at || !app) return;
+        const start = new Date(interview.scheduled_at);
+        const end = new Date(start.getTime() + 45 * 60 * 1000);
+        const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+        const icsContent = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Mawthiq Contributors//Interview Scheduler//AR',
+            'CALSCALE:GREGORIAN',
+            'METHOD:REQUEST',
+            'BEGIN:VEVENT',
+            `UID:interview-${interview.id}-${Date.now()}@mawthiq.com`,
+            `DTSTAMP:${formatUtc(new Date())}`,
+            `DTSTART:${formatUtc(start)}`,
+            `DTEND:${formatUtc(end)}`,
+            `SUMMARY:مقابلة توظيف: ${app.full_name}`,
+            `DESCRIPTION:مقابلة المرشح ${app.full_name} لوظيفة ${app.position || ''}\\nرابط الاجتماع: ${interview.meeting_link || ''}`,
+            `LOCATION:${interview.meeting_link || interview.location || 'Online'}`,
+            'STATUS:CONFIRMED',
+            'END:VEVENT',
+            'END:VCALENDAR'
+        ].join('\r\n');
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', `interview_${app.application_no || app.id}.ics`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('تم تحميل ملف التقويم (.ics) للتنبيهات بنجاح.', 'success');
+    };
 
     // Post-Interview Decision & Response Email Modal
     const [decisionModalOpen, setDecisionModalOpen] = useState(false);
@@ -110,21 +161,53 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                 cover_letter: app.cover_letter || '',
                 internal_notes: app.internal_notes || '',
                 rating: app.rating || 0,
+                availability: (() => {
+                    if (app.availability?.windows && Array.isArray(app.availability.windows) && app.availability.windows.length > 0) {
+                        return app.availability;
+                    }
+                    if (app.availability?.preferred_days && Array.isArray(app.availability.preferred_days) && app.availability.preferred_days.length > 0) {
+                        const isAll = app.availability.preferred_period === 'anytime';
+                        return {
+                            windows: [
+                                {
+                                    days: app.availability.preferred_days,
+                                    all_day: isAll,
+                                    from: app.availability.preferred_period === 'morning' ? '09:00' : '15:00',
+                                    to: app.availability.preferred_period === 'morning' ? '13:00' : '18:00',
+                                }
+                            ],
+                            notes: app.availability.notes || '',
+                        };
+                    }
+                    return {
+                        windows: [
+                            {
+                                days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'],
+                                all_day: false,
+                                from: '15:00',
+                                to: '18:00',
+                            }
+                        ],
+                        notes: '',
+                    };
+                })(),
             });
 
             setSkillsList(app.skills || []);
             setSocialLinks(app.social_links || []);
             setPortfolioItems(app.portfolio_items || []);
 
-            // Set default interview if exists
+            // Set active interview if exists
             if (app.interviews && app.interviews.length > 0) {
-                const firstInt = app.interviews[0];
-                setActiveInterview(firstInt);
-                setQuestionsList(firstInt.questions || [
-                    { id: 1, question: 'الخبرة العملية السابقة والمشاريع المنجزة', category: 'experience', score: 8, max_score: 10, notes: 'عرض مشاريع ممتازة' },
-                    { id: 2, question: 'فهم الأساسيات والمعمارية البرمجية', category: 'technical', score: 9, max_score: 10, notes: 'إلمام قوي بالهيكلية' },
-                    { id: 3, question: 'مهارات التواصل والتفاعل والعمل الجماعي', category: 'communication', score: 8, max_score: 10, notes: 'تواصل لَبِق وواضح' },
-                    { id: 4, question: 'التفرغ والجاهزية للالتزام بمواعيد التسليم', category: 'commitment', score: 9, max_score: 10, notes: 'مستعد للبدء الفوري' },
+                const currentInt = activeInterview
+                    ? (app.interviews.find(i => i.id === activeInterview.id) || app.interviews[0])
+                    : app.interviews[0];
+                setActiveInterview(currentInt);
+                setQuestionsList(currentInt.questions || [
+                    { id: 'q_1', question: 'الخبرة العملية السابقة والمشاريع المنجزة', category: 'الخبرة', score: 8, max_score: 10, notes: '' },
+                    { id: 'q_2', question: 'فهم الأساسيات والمعمارية البرمجية', category: 'المهارات الفنية', score: 9, max_score: 10, notes: '' },
+                    { id: 'q_3', question: 'مهارات التواصل والتفاعل والعمل الجماعي', category: 'التواصل', score: 8, max_score: 10, notes: '' },
+                    { id: 'q_4', question: 'التفرغ والجاهزية للالتزام بمواعيد التسليم', category: 'الالتزام', score: 9, max_score: 10, notes: '' },
                 ]);
             }
         } catch (e) {
@@ -139,6 +222,138 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         loadApplicant();
     }, [applicantId]);
 
+    useEffect(() => {
+        api.get('/scorecard-templates')
+            .then(res => setScorecardTemplates(res.data || []))
+            .catch(() => {});
+    }, []);
+
+    // Matching Slots & Interviewer Info for Scheduling Modal
+    const [matchingSlots, setMatchingSlots] = useState([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [interviewerInfo, setInterviewerInfo] = useState(null);
+
+    const fetchAvailableSlots = async () => {
+        if (!applicant) return;
+        setLoadingSlots(true);
+        try {
+            const res = await api.get(`/interviews/available-slots?applicant_id=${applicant.id}`);
+            setMatchingSlots(res.slots || []);
+            setInterviewerInfo(res.interviewer || null);
+        } catch (err) {
+            console.error('Failed to fetch available slots:', err);
+        } finally {
+            setLoadingSlots(false);
+        }
+    };
+
+    useEffect(() => {
+        if (scheduleModalOpen && applicant) {
+            fetchAvailableSlots();
+        }
+    }, [scheduleModalOpen, applicant?.id]);
+
+    const daysList = [
+        { key: 'Sunday', label: t('daySunday') },
+        { key: 'Monday', label: t('dayMonday') },
+        { key: 'Tuesday', label: t('dayTuesday') },
+        { key: 'Wednesday', label: t('dayWednesday') },
+        { key: 'Thursday', label: t('dayThursday') },
+        { key: 'Friday', label: t('dayFriday') },
+        { key: 'Saturday', label: t('daySaturday') },
+    ];
+
+    const handleAddAvailabilityWindow = () => {
+        setPersonalForm(prev => {
+            const currentWindows = prev.availability?.windows || [];
+            return {
+                ...prev,
+                availability: {
+                    ...(prev.availability || {}),
+                    windows: [
+                        ...currentWindows,
+                        {
+                            days: ['Sunday'],
+                            all_day: false,
+                            from: '15:00',
+                            to: '18:00',
+                        }
+                    ]
+                }
+            };
+        });
+    };
+
+    const handleRemoveAvailabilityWindow = (index) => {
+        setPersonalForm(prev => {
+            const currentWindows = prev.availability?.windows || [];
+            return {
+                ...prev,
+                availability: {
+                    ...(prev.availability || {}),
+                    windows: currentWindows.filter((_, i) => i !== index)
+                }
+            };
+        });
+    };
+
+    const handleToggleAvailabilityWindowDay = (winIndex, dayKey) => {
+        setPersonalForm(prev => {
+            const currentWindows = prev.availability?.windows || [];
+            const updated = currentWindows.map((win, idx) => {
+                if (idx !== winIndex) return win;
+                const days = win.days || [];
+                const nextDays = days.includes(dayKey)
+                    ? days.filter(d => d !== dayKey)
+                    : [...days, dayKey];
+                return { ...win, days: nextDays };
+            });
+            return {
+                ...prev,
+                availability: {
+                    ...(prev.availability || {}),
+                    windows: updated
+                }
+            };
+        });
+    };
+
+    const handleToggleAvailabilityAllDays = (winIndex) => {
+        setPersonalForm(prev => {
+            const currentWindows = prev.availability?.windows || [];
+            const allKeys = daysList.map(d => d.key);
+            const updated = currentWindows.map((win, idx) => {
+                if (idx !== winIndex) return win;
+                const isAll = (win.days || []).length === allKeys.length;
+                return { ...win, days: isAll ? [] : allKeys };
+            });
+            return {
+                ...prev,
+                availability: {
+                    ...(prev.availability || {}),
+                    windows: updated
+                }
+            };
+        });
+    };
+
+    const handleUpdateAvailabilityField = (winIndex, field, value) => {
+        setPersonalForm(prev => {
+            const currentWindows = prev.availability?.windows || [];
+            const updated = currentWindows.map((win, idx) => {
+                if (idx !== winIndex) return win;
+                return { ...win, [field]: value };
+            });
+            return {
+                ...prev,
+                availability: {
+                    ...(prev.availability || {}),
+                    windows: updated
+                }
+            };
+        });
+    };
+
     // Save Personal & Professional Data
     const handleSavePersonalInfo = async (e) => {
         e.preventDefault();
@@ -146,13 +361,17 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         try {
             const payload = {
                 ...personalForm,
+                availability: {
+                    windows: personalForm.availability?.windows || [],
+                    notes: personalForm.availability?.notes || '',
+                },
                 skills: skillsList,
                 social_links: socialLinks,
                 portfolio_items: portfolioItems,
             };
             const res = await api.put(`/applicants/${applicant.id}`, payload);
             setApplicant(res.applicant);
-            showToast('تم حفظ وتحديث بيانات المتقدم بنجاح!', 'success');
+            showToast('تم حفظ وتحديث بيانات المتقدم وأوقات التفرغ بنجاح!', 'success');
         } catch (err) {
             showToast(err.message || 'فشل تحديث البيانات.', 'error');
         } finally {
@@ -369,22 +588,21 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         if (!activeInterview) return;
         setSavingQuestions(true);
 
-        // compute overall average
-        const avg = questionsList.length > 0
-            ? Math.round((questionsList.reduce((acc, q) => acc + Number(q.score), 0) / questionsList.length) * 10) / 10
-            : 8;
+        const sumScore = questionsList.reduce((acc, q) => acc + (Number(q.score) || 0), 0);
+        const sumMax = questionsList.reduce((acc, q) => acc + (Number(q.max_score) || 10), 0);
+        const percentage = sumMax > 0 ? Math.round((sumScore / sumMax) * 100) : 0;
 
         try {
-            await api.post(`/interviews/${activeInterview.id}/result`, {
-                technical_score: avg >= 8 ? 9 : 7,
-                communication_score: avg >= 8 ? 9 : 7,
-                commitment_score: avg >= 8 ? 9 : 8,
-                overall_score: avg,
-                recommendation: avg >= 8.5 ? 'strong_hire' : (avg >= 7 ? 'hire' : 'under_consideration'),
-                feedback: `تم تقييم ${questionsList.length} محاور وأسئلة فنية بمعدل إجمالي ${avg}/10.`,
+            await api.post(`/interviews/${activeInterview.id}/questions`, {
                 questions: questionsList,
+                total_score: sumScore,
+                max_score: sumMax,
+                overall_percentage: percentage,
+                feedback: `تم تقييم أسئلة المقابلة بنتيجة ${sumScore} من أصل ${sumMax} (${percentage}%).`,
+                recommendation: percentage >= 85 ? 'strong_hire' : (percentage >= 70 ? 'hire' : (percentage >= 50 ? 'under_consideration' : 'reject')),
+                status: 'completed',
             });
-            showToast('تم حفظ تقييم الأسئلة والمقابلة بنجاح!', 'success');
+            showToast('تم حفظ تقييم كرت المقابلة ورصد الدرجات بنجاح!', 'success');
             loadApplicant();
         } catch (err) {
             showToast(err.message || 'فشل حفظ تقييم المقابلة.', 'error');
@@ -439,18 +657,28 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     };
 
     // Schedule Interview
-    const handleScheduleInterview = async (e) => {
-        e.preventDefault();
+    const handleScheduleInterview = async (e, forceConflict = false) => {
+        if (e) e.preventDefault();
+        setSchedulingLoading(true);
+        setConflictWarning(null);
         try {
             await api.post('/interviews', {
                 ...scheduleForm,
                 applicant_id: applicant.id,
+                force_conflict: forceConflict,
             });
             showToast('تمت جدولة المقابلة بنجاح!', 'success');
             setScheduleModalOpen(false);
+            setConflictWarning(null);
             loadApplicant();
         } catch (err) {
-            showToast(err.message || 'فشل جدولة المقابلة.', 'error');
+            if (err.has_conflict) {
+                setConflictWarning(err.message);
+            } else {
+                showToast(err.message || 'فشل جدولة المقابلة.', 'error');
+            }
+        } finally {
+            setSchedulingLoading(false);
         }
     };
 
@@ -571,6 +799,19 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                         />
                     )}
 
+                    {/* Edit Profile & Availability */}
+                    {hasPermission('edit_applicants') && (
+                        <IconButton
+                            onClick={() => {
+                                setActiveTab('overview');
+                                const el = document.getElementById('personal-overview-card');
+                                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            tooltip={t('editApplicant')}
+                            icon="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                    )}
+
                     {/* Schedule Interview */}
                     {hasPermission('schedule_interviews') && (
                         <IconButton
@@ -681,7 +922,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
                 {/* Tab 1: Overview & Personal Details */}
                 {activeTab === 'overview' && (
-                    <div className="bg-white rounded-lg border border-slate-200 p-5 sm:p-6 shadow-2xs">
+                    <div id="personal-overview-card" className="bg-white rounded-lg border border-slate-200 p-5 sm:p-6 shadow-2xs">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
                             <div>
                                 <h3 className="font-bold text-sm text-slate-900">
@@ -920,6 +1161,141 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         value={personalForm.internal_notes}
                                         onChange={e => setPersonalForm({ ...personalForm, internal_notes: e.target.value })}
                                         className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs leading-relaxed bg-slate-50/50"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Section 4: Dynamic Multi-Rule Interview Availability */}
+                            <div className="pt-4 border-t border-slate-100 space-y-4">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                                            4. {t('interviewAvailability')}
+                                        </h4>
+                                        <p className="text-[11px] text-slate-500 mt-0.5">
+                                            {t('editApplicantSubtitle')}
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleAddAvailabilityWindow}
+                                        className="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition-all cursor-pointer"
+                                    >
+                                        {t('addAvailabilityRule')}
+                                    </button>
+                                </div>
+
+                                {/* Availability Windows List */}
+                                <div className="space-y-3">
+                                    {(personalForm.availability?.windows || []).map((win, idx) => (
+                                        <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <span className="text-xs font-bold text-slate-700">
+                                                    فترة #{idx + 1}
+                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleAvailabilityAllDays(idx)}
+                                                        className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                                                    >
+                                                        {t('allDays')}
+                                                    </button>
+                                                    {(personalForm.availability?.windows || []).length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveAvailabilityWindow(idx)}
+                                                            className="text-slate-400 hover:text-rose-600 text-xs font-bold px-2 py-0.5 cursor-pointer"
+                                                            title={t('removeRule')}
+                                                        >
+                                                            ✕ {t('removeRule')}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Days Selector Chips */}
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {daysList.map(d => {
+                                                    const isSelected = (win.days || []).includes(d.key);
+                                                    return (
+                                                        <button
+                                                            key={d.key}
+                                                            type="button"
+                                                            onClick={() => handleToggleAvailabilityWindowDay(idx, d.key)}
+                                                            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                                                                isSelected
+                                                                    ? 'bg-blue-600 text-white shadow-2xs'
+                                                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                                            }`}
+                                                        >
+                                                            {d.label} {isSelected && '✓'}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Times from/to and all day toggle */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/60 items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`win_allday_${idx}`}
+                                                        checked={win.all_day || false}
+                                                        onChange={e => handleUpdateAvailabilityField(idx, 'all_day', e.target.checked)}
+                                                        className="rounded text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    <label htmlFor={`win_allday_${idx}`} className="text-xs font-bold text-slate-700 cursor-pointer">
+                                                        {t('allDayFlexible')}
+                                                    </label>
+                                                </div>
+
+                                                {!win.all_day && (
+                                                    <>
+                                                        <div>
+                                                            <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('fromTime')}</label>
+                                                            <input
+                                                                type="time"
+                                                                value={win.from || '15:00'}
+                                                                onChange={e => handleUpdateAvailabilityField(idx, 'from', e.target.value)}
+                                                                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white font-mono"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('toTime')}</label>
+                                                            <input
+                                                                type="time"
+                                                                value={win.to || '18:00'}
+                                                                onChange={e => handleUpdateAvailabilityField(idx, 'to', e.target.value)}
+                                                                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white font-mono"
+                                                            />
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* General Availability Notes */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                        {t('availabilityNotes')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={personalForm.availability?.notes || ''}
+                                        onChange={e => setPersonalForm(prev => ({
+                                            ...prev,
+                                            availability: {
+                                                ...(prev.availability || {}),
+                                                notes: e.target.value,
+                                            }
+                                        }))}
+                                        placeholder="مثال: يفضل التواصل المسبق قبل الموعد بنصف ساعة أو أي تفضيلات أخرى"
+                                        className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
                                     />
                                 </div>
                             </div>
@@ -1506,8 +1882,56 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                 {/* Tab 5: Interviews & Evaluation Questions (ملف مقابلة مخصص + أسئلة + رد مناسب) */}
                 {activeTab === 'interviews' && (
                     <div className="space-y-6">
+                        {/* Candidate Availability Summary Banner */}
+                        <div className="bg-white rounded-lg border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                    🗓️
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-800">
+                                        {t('interviewAvailability')}
+                                    </h4>
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                        {Array.isArray(applicant.availability?.windows) && applicant.availability.windows.length > 0 ? (
+                                            applicant.availability.windows.map((w, i) => (
+                                                <span key={i} className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold">
+                                                    {(w.days || []).map(d => t(`day${d}`) || d).join(', ')}: {w.all_day ? t('allDayFlexible') : `${w.from} إلى ${w.to}`}
+                                                </span>
+                                            ))
+                                        ) : Array.isArray(applicant.availability?.preferred_days) && applicant.availability.preferred_days.length > 0 ? (
+                                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold">
+                                                {applicant.availability.preferred_days.map(d => t(`day${d}`) || d).join(', ')}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[11px] text-slate-500">
+                                                مرن طوال أيام الأسبوع
+                                            </span>
+                                        )}
+                                    </div>
+                                    {applicant.availability?.notes && (
+                                        <p className="text-[11px] text-slate-500 mt-1">
+                                            {applicant.availability.notes}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveTab('overview');
+                                    const el = document.getElementById('personal-overview-card');
+                                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="px-3 py-1.5 rounded-md border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer"
+                            >
+                                {t('editApplicantShort')}
+                            </button>
+                        </div>
+
                         {/* Interview Selector & Schedule New */}
-                        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h3 className="font-black text-sm text-slate-800">
                                     ملف المقابلة والأسئلة التقييمية
@@ -1519,158 +1943,319 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
                             <button
                                 onClick={() => setScheduleModalOpen(true)}
-                                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-100 flex items-center gap-1.5"
+                                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-100 flex items-center gap-1.5 cursor-pointer"
                             >
                                 + جدولة مقابلة جديدة
                             </button>
                         </div>
 
+                        {/* If multiple interviews exist, show selector pills */}
+                        {applicant.interviews && applicant.interviews.length > 1 && (
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                                <span className="text-xs font-bold text-slate-500 shrink-0">جلسات المقابلة:</span>
+                                {applicant.interviews.map((intv, idx) => {
+                                    const isSel = activeInterview?.id === intv.id;
+                                    return (
+                                        <button
+                                            key={intv.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveInterview(intv);
+                                                setQuestionsList(intv.questions || []);
+                                            }}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer shrink-0 ${
+                                                isSel
+                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            مقابلة {idx + 1} ({new Date(intv.scheduled_at).toLocaleDateString('ar-EG', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })})
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+
                         {activeInterview ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                {/* Left 2 cols: Questions Scorecard */}
-                                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-                                    <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-black text-sm text-slate-800">
-                                                أسئلة التقييم المخصصة للمقابلة
+                            <div className="space-y-4">
+                                {/* Active Interview Details & Meeting/Calendar Action Bar (ADR-010) */}
+                                <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                                        <div className="flex items-center gap-2.5 flex-wrap">
+                                            <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                                🗓️
                                             </span>
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">
-                                                {questionsList.length} محاور
-                                            </span>
-                                        </div>
-
-                                        <button
-                                            onClick={handleSaveInterviewScorecard}
-                                            disabled={savingQuestions}
-                                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 disabled:opacity-50"
-                                        >
-                                            {savingQuestions ? 'جاري الحفظ...' : '💾 اعتماد التقييم'}
-                                        </button>
-                                    </div>
-
-                                    {/* Add Question Box */}
-                                    <form onSubmit={handleAddQuestion} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row gap-2 items-center">
-                                        <input
-                                            type="text"
-                                            value={newQuestionText}
-                                            onChange={e => setNewQuestionText(e.target.value)}
-                                            placeholder="أضف سؤالاً للمقابلة (مثلاً: ما هي خبرتك في تأمين API؟)..."
-                                            className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full"
-                                        />
-                                        <select
-                                            value={newQuestionCategory}
-                                            onChange={e => setNewQuestionCategory(e.target.value)}
-                                            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
-                                        >
-                                            <option value="technical">فني وتقني</option>
-                                            <option value="experience">خبرة سابقة</option>
-                                            <option value="communication">تواصل وذكاء اجتماعي</option>
-                                            <option value="problem_solving">حل المشكلات</option>
-                                        </select>
-                                        <button
-                                            type="submit"
-                                            className="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl whitespace-nowrap"
-                                        >
-                                            + إضافة سؤال
-                                        </button>
-                                    </form>
-
-                                    {/* Questions List with rating sliders */}
-                                    <div className="space-y-4">
-                                        {questionsList.map((q, idx) => (
-                                            <div
-                                                key={q.id}
-                                                className="p-4 rounded-2xl border border-slate-200 hover:border-blue-200 transition-all bg-white shadow-xs space-y-3"
-                                            >
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 font-black text-xs flex items-center justify-center shrink-0">
-                                                            {idx + 1}
-                                                        </span>
-                                                        <h5 className="font-bold text-xs text-slate-800">
-                                                            {q.question}
-                                                        </h5>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveQuestion(q.id)}
-                                                        className="text-slate-300 hover:text-rose-600 text-sm"
-                                                    >
-                                                        &times;
-                                                    </button>
-                                                </div>
-
-                                                {/* Score Slider */}
-                                                <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl">
-                                                    <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">الدرجة:</span>
-                                                    <input
-                                                        type="range"
-                                                        min="1"
-                                                        max="10"
-                                                        value={q.score}
-                                                        onChange={e => handleUpdateQuestionScore(q.id, e.target.value)}
-                                                        className="flex-1 accent-blue-600 cursor-pointer"
-                                                    />
-                                                    <span className="font-mono font-black text-blue-700 text-xs min-w-[40px] text-end">
-                                                        {q.score} / 10
+                                            <div>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h4 className="text-xs font-bold text-slate-900">
+                                                        موعد المقابلة: {new Date(activeInterview.scheduled_at).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' })}
+                                                    </h4>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                                        activeInterview.status === 'completed'
+                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            : activeInterview.status === 'cancelled'
+                                                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                    }`}>
+                                                        {t(`interview_${activeInterview.status}`) || activeInterview.status}
                                                     </span>
                                                 </div>
-
-                                                {/* Notes */}
-                                                <input
-                                                    type="text"
-                                                    value={q.notes || ''}
-                                                    onChange={e => handleUpdateQuestionNotes(q.id, e.target.value)}
-                                                    placeholder="ملاحظات المحكّم على إجابة المتقدم..."
-                                                    className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-[11px] text-slate-600 placeholder-slate-400"
-                                                />
+                                                <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                                                    <span>المحكّم: <strong className="text-slate-700">{activeInterview.interviewer?.name || 'غير محدد'}</strong></span>
+                                                    <span>&bull;</span>
+                                                    <span>النوع: <strong className="text-slate-700">{activeInterview.interview_type === 'online' ? 'عبر الإنترنت (أونلاين)' : 'حضورياً'}</strong></span>
+                                                </div>
                                             </div>
-                                        ))}
+                                        </div>
+
+                                        {/* Scorecard Template Badge if attached */}
+                                        {activeInterview.scorecard_template && (
+                                            <div className="flex items-center gap-1.5 self-start md:self-center px-3 py-1.5 rounded-lg bg-blue-50/80 border border-blue-200 text-blue-800 text-xs font-bold">
+                                                <span>📋</span>
+                                                <span>{t('scorecardTemplate')}: {activeInterview.scorecard_template.title}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Meeting Link & Calendar Integration Row (ADR-010) */}
+                                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {activeInterview.meeting_link && (
+                                                <>
+                                                    <a
+                                                        href={activeInterview.meeting_link}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                                    >
+                                                        <span>🔗</span>
+                                                        <span>{t('joinMeeting')}</span>
+                                                    </a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(activeInterview.meeting_link);
+                                                            showToast(t('linkCopied'), 'info');
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                    >
+                                                        <span>📋</span>
+                                                        <span>{t('copyMeetingLink')}</span>
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {/* Calendar Export Buttons */}
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <a
+                                                href={getGoogleCalendarUrl(activeInterview, applicant)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                title="إضافة موعد المقابلة إلى تقويم Google"
+                                            >
+                                                <span>📅</span>
+                                                <span>{t('addToGoogleCalendar')}</span>
+                                            </a>
+                                            <button
+                                                type="button"
+                                                onClick={() => downloadIcsFile(activeInterview, applicant)}
+                                                className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                title="تنزيل ملف .ics للتنبيهات على الهاتف و Outlook"
+                                            >
+                                                <span>📥</span>
+                                                <span>{t('downloadIcsCalendar')}</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Right 1 col: Interview Summary & Decision Email Composer */}
-                                <div className="space-y-6">
-                                    {/* Overall Score Summary */}
-                                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs text-center">
-                                        <span className="text-xs font-bold text-slate-400 block mb-1">
-                                            المعدل النهائي للمقابلة
-                                        </span>
-                                        <div className="text-4xl font-black text-blue-700 my-2 font-mono">
-                                            {questionsList.length > 0
-                                                ? Math.round((questionsList.reduce((acc, q) => acc + Number(q.score), 0) / questionsList.length) * 10) / 10
-                                                : 8} <span className="text-sm font-normal text-slate-400">/ 10</span>
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 mb-6">
-                                            تم احتساب المتوسط التلقائي لـ {questionsList.length} محاور تقييمية.
-                                        </p>
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Left 2 cols: Questions Scorecard */}
+                                    <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-black text-sm text-slate-800">
+                                                    أسئلة التقييم المخصصة للمقابلة
+                                                </span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">
+                                                    {questionsList.length} محاور
+                                                </span>
+                                            </div>
 
-                                        {/* Decision Actions (الرد على المتقدم بالرد المناسب) */}
-                                        <h4 className="text-xs font-black text-slate-800 mb-3 text-start">
-                                            اتخاذ القرار وإرسال الرد المناسب للمتقدم:
-                                        </h4>
-                                        <div className="space-y-2">
                                             <button
-                                                onClick={() => openDecisionEmailModal('accepted')}
-                                                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-between"
+                                                onClick={handleSaveInterviewScorecard}
+                                                disabled={savingQuestions}
+                                                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 disabled:opacity-50 cursor-pointer"
                                             >
-                                                <span>🎉 إرسال خطاب القبول والاعتماد</span>
-                                                <span>&rarr;</span>
+                                                {savingQuestions ? 'جاري الحفظ...' : '💾 ' + t('saveScorecardEvaluation')}
                                             </button>
+                                        </div>
+
+                                        {/* Add Question Box */}
+                                        <form onSubmit={handleAddQuestion} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row gap-2 items-center">
+                                            <input
+                                                type="text"
+                                                value={newQuestionText}
+                                                onChange={e => setNewQuestionText(e.target.value)}
+                                                placeholder="أضف سؤالاً للمقابلة (مثلاً: ما هي خبرتك في تأمين API؟)..."
+                                                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full"
+                                            />
+                                            <select
+                                                value={newQuestionCategory}
+                                                onChange={e => setNewQuestionCategory(e.target.value)}
+                                                className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                                            >
+                                                <option value="المهارات الفنية">فني وتقني</option>
+                                                <option value="الخبرة السابقة">خبرة سابقة</option>
+                                                <option value="التواصل والعمل الجماعي">تواصل وذكاء اجتماعي</option>
+                                                <option value="حل المشكلات">حل المشكلات</option>
+                                                <option value="الالتزام والانضباط">الالتزام والانضباط</option>
+                                            </select>
                                             <button
-                                                onClick={() => openDecisionEmailModal('probation')}
-                                                className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-between"
+                                                type="submit"
+                                                className="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl whitespace-nowrap cursor-pointer"
                                             >
-                                                <span>⏳ إرسال تكليف مرحلة الاختبار</span>
-                                                <span>&rarr;</span>
+                                                + إضافة سؤال
                                             </button>
-                                            <button
-                                                onClick={() => openDecisionEmailModal('rejected')}
-                                                className="w-full py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all flex items-center justify-between"
-                                            >
-                                                <span>✉️ إرسال خطاب اعتذار مع الملاحظات</span>
-                                                <span>&rarr;</span>
-                                            </button>
+                                        </form>
+
+                                        {/* Questions List with rating sliders & expected model answers */}
+                                        <div className="space-y-4">
+                                            {questionsList.map((q, idx) => {
+                                                const maxScore = Number(q.max_score) || 10;
+                                                return (
+                                                    <div
+                                                        key={q.id || idx}
+                                                        className="p-4 rounded-2xl border border-slate-200 hover:border-blue-200 transition-all bg-white shadow-xs space-y-3"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 font-black text-xs flex items-center justify-center shrink-0">
+                                                                    {idx + 1}
+                                                                </span>
+                                                                <h5 className="font-bold text-xs text-slate-800">
+                                                                    {q.question}
+                                                                </h5>
+                                                                {q.category && (
+                                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                                                                        {q.category}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveQuestion(q.id)}
+                                                                className="text-slate-300 hover:text-rose-600 text-sm cursor-pointer"
+                                                                title="حذف هذا السؤال"
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Expected Answer Structure Guide for Interviewer (ADR-010) */}
+                                                        {q.expected_answer && (
+                                                            <div className="text-[11px] bg-blue-50/60 border border-blue-100 text-blue-900 p-2.5 rounded-xl leading-relaxed">
+                                                                <span className="font-bold text-blue-800 block mb-0.5">
+                                                                    💡 {t('expectedAnswer')}:
+                                                                </span>
+                                                                {q.expected_answer}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Score Slider & Direct Input */}
+                                                        <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl">
+                                                            <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">{t('interviewerScore')}:</span>
+                                                            <input
+                                                                type="range"
+                                                                min="0"
+                                                                max={maxScore}
+                                                                step="1"
+                                                                value={q.score ?? 0}
+                                                                onChange={e => handleUpdateQuestionScore(q.id, e.target.value)}
+                                                                className="flex-1 accent-blue-600 cursor-pointer"
+                                                            />
+                                                            <div className="flex items-center gap-1 font-mono font-black text-blue-700 text-xs min-w-[55px] text-end">
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max={maxScore}
+                                                                    value={q.score ?? 0}
+                                                                    onChange={e => handleUpdateQuestionScore(q.id, e.target.value)}
+                                                                    className="w-12 text-center text-xs font-bold bg-white border border-slate-300 rounded px-1 py-0.5"
+                                                                />
+                                                                <span>/ {maxScore}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Notes */}
+                                                        <input
+                                                            type="text"
+                                                            value={q.notes || ''}
+                                                            onChange={e => handleUpdateQuestionNotes(q.id, e.target.value)}
+                                                            placeholder={t('interviewerNotes')}
+                                                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-[11px] text-slate-600 placeholder-slate-400 bg-white"
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Right 1 col: Interview Summary & Decision Email Composer */}
+                                    <div className="space-y-6">
+                                        {/* Overall Score Summary */}
+                                        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs text-center">
+                                            <span className="text-xs font-bold text-slate-400 block mb-1">
+                                                المجموع الكلي ونسبة التقييم
+                                            </span>
+                                            {(() => {
+                                                const totalGiven = questionsList.reduce((acc, q) => acc + (Number(q.score) || 0), 0);
+                                                const totalPossible = questionsList.reduce((acc, q) => acc + (Number(q.max_score) || 10), 0);
+                                                const pct = totalPossible > 0 ? Math.round((totalGiven / totalPossible) * 100) : 0;
+                                                return (
+                                                    <>
+                                                        <div className="text-4xl font-black text-blue-700 my-2 font-mono">
+                                                            {totalGiven} <span className="text-sm font-normal text-slate-400">/ {totalPossible}</span>
+                                                        </div>
+                                                        <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 mb-4">
+                                                            النسبة الإجمالية: {pct}%
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-500 mb-6">
+                                                            تم احتساب المجموع التلقائي لـ {questionsList.length} محاور تقييمية.
+                                                        </p>
+                                                    </>
+                                                );
+                                            })()}
+
+                                            {/* Decision Actions (الرد على المتقدم بالرد المناسب) */}
+                                            <h4 className="text-xs font-black text-slate-800 mb-3 text-start">
+                                                اتخاذ القرار وإرسال الرد المناسب للمتقدم:
+                                            </h4>
+                                            <div className="space-y-2">
+                                                <button
+                                                    onClick={() => openDecisionEmailModal('accepted')}
+                                                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-between cursor-pointer"
+                                                >
+                                                    <span>🎉 إرسال خطاب القبول والاعتماد</span>
+                                                    <span>&rarr;</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => openDecisionEmailModal('probation')}
+                                                    className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-between cursor-pointer"
+                                                >
+                                                    <span>⏳ إرسال تكليف مرحلة الاختبار</span>
+                                                    <span>&rarr;</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => openDecisionEmailModal('rejected')}
+                                                    className="w-full py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all flex items-center justify-between cursor-pointer"
+                                                >
+                                                    <span>✉️ إرسال خطاب اعتذار مع الملاحظات</span>
+                                                    <span>&rarr;</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1865,11 +2450,143 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
             {/* Modal: Schedule New Interview */}
             {scheduleModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95">
+                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                            <h3 className="font-bold text-sm text-slate-800">{t('scheduleInterview')}</h3>
-                            <button onClick={() => setScheduleModalOpen(false)} className="text-slate-400 text-xl">&times;</button>
+                            <div>
+                                <h3 className="font-bold text-sm text-slate-800">{t('scheduleInterview')}</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">{applicant.full_name} &bull; {applicant.position}</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setScheduleModalOpen(false);
+                                    setConflictWarning(null);
+                                }}
+                                className="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer"
+                            >
+                                &times;
+                            </button>
                         </div>
+
+                        {/* Dynamic Smart Matching & Intersection Box */}
+                        <div className="mb-4 p-4 rounded-2xl border border-blue-200/80 bg-gradient-to-b from-blue-50/70 to-slate-50 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                                    <span>⚡</span> {t('smartMatchingIntersection')}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={fetchAvailableSlots}
+                                    disabled={loadingSlots}
+                                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800 disabled:opacity-50 cursor-pointer flex items-center gap-1"
+                                >
+                                    <span>🔄</span> {loadingSlots ? t('loading') : t('refreshSuggestedSlots')}
+                                </button>
+                            </div>
+
+                            {/* Candidate Availability & Duty Hours Chips */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+                                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1">
+                                    <span className="font-bold text-slate-700 block">
+                                        👤 {t('candidateAvailabilitySummary')}:
+                                    </span>
+                                    {Array.isArray(applicant.availability?.windows) && applicant.availability.windows.length > 0 ? (
+                                        applicant.availability.windows.map((w, i) => (
+                                            <div key={i} className="text-slate-600 font-medium">
+                                                &bull; {(w.days || []).map(d => t(`day${d}`) || d).join(', ')}:{' '}
+                                                <span className="font-bold text-blue-700">
+                                                    {w.all_day ? t('allDayFlexible') : `${w.from} إلى ${w.to}`}
+                                                </span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-slate-500">مرن طوال الأسبوع</div>
+                                    )}
+                                    {applicant.availability?.notes && (
+                                        <div className="text-slate-400 italic text-[10px] mt-0.5">
+                                            &ldquo;{applicant.availability.notes}&rdquo;
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1">
+                                    <span className="font-bold text-slate-700 block">
+                                        ⏱️ {t('interviewerDutyHours')}:
+                                    </span>
+                                    {interviewerInfo?.working_hours && Array.isArray(interviewerInfo.working_hours) ? (
+                                        interviewerInfo.working_hours.map((w, i) => (
+                                            <div key={i} className="text-slate-600 font-medium">
+                                                &bull; {(w.days || []).map(d => t(`day${d}`) || d).join(', ')}:{' '}
+                                                <span className="font-bold text-emerald-700">
+                                                    {w.all_day ? t('allDayFlexible') : `${w.from} إلى ${w.to}`}
+                                                </span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-slate-500">الأحد - الخميس (09:00 ص - 05:00 م)</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Suggested Slots from Intersection */}
+                            <div className="pt-2 border-t border-blue-100">
+                                <p className="text-[11px] font-bold text-blue-900 mb-2">
+                                    {t('selectAvailableSlotPrompt')}
+                                </p>
+
+                                {loadingSlots ? (
+                                    <div className="py-4 text-center text-xs text-blue-600 font-semibold animate-pulse">
+                                        جاري احتساب التقاطع واستبعاد المواعيد المحجوزة...
+                                    </div>
+                                ) : matchingSlots.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
+                                        {matchingSlots.map((slot, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => {
+                                                    setScheduleForm({ ...scheduleForm, scheduled_at: slot.datetime });
+                                                    if (conflictWarning) setConflictWarning(null);
+                                                }}
+                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                                                    scheduleForm.scheduled_at === slot.datetime
+                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                                        : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'
+                                                }`}
+                                            >
+                                                {slot.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
+                                        {t('noMatchingSlotsFound')}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Conflict Warning Alert Box */}
+                        {conflictWarning && (
+                            <div className="mb-4 p-3.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 space-y-2 animate-in fade-in">
+                                <div className="flex items-center gap-2 font-bold text-xs">
+                                    <span>⚠️</span> {t('conflictWarning')}
+                                </div>
+                                <p className="text-xs leading-relaxed">
+                                    {conflictWarning}
+                                </p>
+                                <div className="pt-1 flex justify-end">
+                                    <button
+                                        type="button"
+                                        disabled={schedulingLoading}
+                                        onClick={(e) => handleScheduleInterview(e, true)}
+                                        className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                                    >
+                                        {schedulingLoading ? t('loading') : t('forceSchedule')}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <form onSubmit={handleScheduleInterview} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">{t('scheduledAt')} *</label>
@@ -1877,7 +2594,10 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                     type="datetime-local"
                                     required
                                     value={scheduleForm.scheduled_at}
-                                    onChange={e => setScheduleForm({ ...scheduleForm, scheduled_at: e.target.value })}
+                                    onChange={e => {
+                                        setScheduleForm({ ...scheduleForm, scheduled_at: e.target.value });
+                                        if (conflictWarning) setConflictWarning(null);
+                                    }}
                                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
                                 />
                             </div>
@@ -1893,9 +2613,65 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                     <option value="phone">هاتفياً</option>
                                 </select>
                             </div>
+
+                            {/* Scorecard Template Selector (ADR-010) */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    {t('scorecardTemplate')}
+                                </label>
+                                <select
+                                    value={scheduleForm.scorecard_template_id || ''}
+                                    onChange={e => setScheduleForm({ ...scheduleForm, scorecard_template_id: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                                >
+                                    <option value="">-- {t('noTemplate')} --</option>
+                                    {scorecardTemplates.map(tpl => (
+                                        <option key={tpl.id} value={tpl.id}>
+                                            {tpl.title} ({tpl.position || 'عام'}) - {tpl.total_max_score} درجة
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                    عند اختيار كرت تقييم، سيتم تحميل محاور وأسئلة التقييم وهيكل الإجابة المتوقعة تلقائياً في المقابلة.
+                                </p>
+                            </div>
+
+                            {/* Meeting Link for Online Interviews */}
+                            {scheduleForm.interview_type === 'online' && (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        رابط المقابلة (Google Meet / Zoom)
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={scheduleForm.meeting_link || ''}
+                                        onChange={e => setScheduleForm({ ...scheduleForm, meeting_link: e.target.value })}
+                                        placeholder="https://meet.google.com/... (يتم توليده تلقائياً إذا تُرك فارغاً)"
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white"
+                                    />
+                                    <p className="text-[10px] text-slate-400 mt-1">
+                                        سيتم إدراج الرابط في دعوة البريد وإتاحته فوراً للانضمام وتصديره للتقويم.
+                                    </p>
+                                </div>
+                            )}
                             <div className="pt-2 flex gap-2 justify-end">
-                                <button type="button" onClick={() => setScheduleModalOpen(false)} className="px-4 py-2 border rounded-xl text-xs font-bold">{t('cancel')}</button>
-                                <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">تأكيد الجدولة</button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setScheduleModalOpen(false);
+                                        setConflictWarning(null);
+                                    }}
+                                    className="px-4 py-2 border rounded-xl text-xs font-bold cursor-pointer"
+                                >
+                                    {t('cancel')}
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={schedulingLoading}
+                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold cursor-pointer"
+                                >
+                                    {schedulingLoading ? t('loading') : 'تأكيد الجدولة'}
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -82,15 +82,53 @@ export default function InterviewsPage({ currentRoute, navigate }) {
 
     const overallCalculated = Math.round(((Number(resultForm.technical_score) + Number(resultForm.communication_score) + Number(resultForm.commitment_score)) / 3) * 10) / 10;
 
-    const filteredInterviews = interviews.filter(item => {
-        if (!search.trim()) return true;
-        const q = search.toLowerCase();
-        return (
-            item.applicant?.full_name?.toLowerCase().includes(q) ||
-            item.applicant?.position?.toLowerCase().includes(q) ||
-            item.interviewer?.name?.toLowerCase().includes(q)
-        );
-    });
+    const getGoogleCalendarUrl = (item) => {
+        if (!item || !item.scheduled_at) return '#';
+        const applicantName = item.applicant?.full_name || 'متقدم';
+        const title = encodeURIComponent(`مقابلة توظيف: ${applicantName} (${item.applicant?.position || 'مساهم'})`);
+        const start = new Date(item.scheduled_at);
+        const end = new Date(start.getTime() + 45 * 60 * 1000);
+        const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+        const dates = `${formatUtc(start)}/${formatUtc(end)}`;
+        const details = encodeURIComponent(`مقابلة المرشح ${applicantName}\nرقم الطلب: ${item.applicant?.application_no || ''}\nرابط المقابلة: ${item.meeting_link || ''}`);
+        const location = encodeURIComponent(item.meeting_link || item.location || 'Online');
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+    };
+
+    const downloadIcs = (item) => {
+        if (!item || !item.scheduled_at) return;
+        const applicantName = item.applicant?.full_name || 'applicant';
+        const start = new Date(item.scheduled_at);
+        const end = new Date(start.getTime() + 45 * 60 * 1000);
+        const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+        const icsContent = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Mawthiq Contributors//Interview Scheduler//AR',
+            'CALSCALE:GREGORIAN',
+            'METHOD:REQUEST',
+            'BEGIN:VEVENT',
+            `UID:interview-${item.id}-${Date.now()}@mawthiq.com`,
+            `DTSTAMP:${formatUtc(new Date())}`,
+            `DTSTART:${formatUtc(start)}`,
+            `DTEND:${formatUtc(end)}`,
+            `SUMMARY:مقابلة توظيف: ${applicantName}`,
+            `DESCRIPTION:مقابلة المرشح ${applicantName}\\nرابط الاجتماع: ${item.meeting_link || ''}`,
+            `LOCATION:${item.meeting_link || item.location || 'Online'}`,
+            'STATUS:CONFIRMED',
+            'END:VEVENT',
+            'END:VCALENDAR'
+        ].join('\r\n');
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', `interview_${item.id}.ics`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast(t('downloadIcsCalendar'), 'info');
+    };
 
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
@@ -105,6 +143,11 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                         onClick={() => loadInterviews(activeStatus)}
                         tooltip={t('refreshInterviews')}
                         icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                    <IconButton
+                        onClick={() => navigate('#/scorecards')}
+                        tooltip={t('navScorecards')}
+                        icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                     <IconButton
                         variant="primary"
@@ -261,7 +304,12 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                 </button>
                                             </td>
                                             <td className="px-4 py-3 text-slate-600">
-                                                {item.applicant?.position}
+                                                <div>{item.applicant?.position}</div>
+                                                {item.scorecard_template && (
+                                                    <span className="inline-block text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 mt-0.5">
+                                                        📋 {item.scorecard_template.title}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 font-mono text-[11px] text-slate-500">
                                                 {new Date(item.scheduled_at).toLocaleString(isRtl ? 'ar-EG' : 'en-US', { dateStyle: 'short', timeStyle: 'short' })}
@@ -273,7 +321,9 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                 {item.interviewer?.name || '—'}
                                             </td>
                                             <td className="px-4 py-3 font-mono font-bold text-slate-800">
-                                                {item.status === 'completed' ? `${item.overall_score} / 10` : '—'}
+                                                {item.status === 'completed'
+                                                    ? (item.overall_percentage != null ? `${item.overall_percentage}%` : `${item.overall_score} / 10`)
+                                                    : '—'}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${
@@ -300,6 +350,16 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                             icon="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                                         />
                                                     )}
+                                                    <IconButton
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        tooltipPosition="top"
+                                                        href={getGoogleCalendarUrl(item)}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        tooltip={t('addToGoogleCalendar')}
+                                                        icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                                    />
                                                     <IconButton
                                                         size="sm"
                                                         variant="ghost"

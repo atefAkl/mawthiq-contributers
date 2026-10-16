@@ -25,6 +25,10 @@ class Interview extends Model
         'feedback',
         'questions',
         'conducted_at',
+        'scorecard_template_id',
+        'total_score',
+        'max_score',
+        'overall_percentage',
     ];
 
     protected $casts = [
@@ -34,6 +38,9 @@ class Interview extends Model
         'communication_score' => 'integer',
         'commitment_score' => 'integer',
         'overall_score' => 'float',
+        'total_score' => 'float',
+        'max_score' => 'float',
+        'overall_percentage' => 'float',
         'questions' => 'array',
     ];
 
@@ -45,5 +52,10 @@ class Interview extends Model
     public function interviewer()
     {
         return $this->belongsTo(User::class, 'interviewer_id');
+    }
+
+    public function scorecardTemplate()
+    {
+        return $this->belongsTo(ScorecardTemplate::class, 'scorecard_template_id');
     }
 }

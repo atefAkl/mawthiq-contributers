@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PublicApplyController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\ScorecardTemplateController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -70,12 +71,22 @@ Route::middleware('auth:sanctum')->group(function () {
     // Interviews & Evaluation Results
     Route::prefix('interviews')->group(function () {
         Route::get('/', [InterviewController::class, 'index']);
+        Route::get('/available-slots', [InterviewController::class, 'getAvailableSlots']);
         Route::post('/', [InterviewController::class, 'store']);
         Route::get('/{id}', [InterviewController::class, 'show']);
         Route::put('/{id}', [InterviewController::class, 'update']);
         Route::delete('/{id}', [InterviewController::class, 'destroy']);
         Route::post('/{id}/result', [InterviewController::class, 'recordResult']);
         Route::post('/{id}/questions', [InterviewController::class, 'updateQuestions']);
+    });
+
+    // Scorecard Templates
+    Route::prefix('scorecard-templates')->group(function () {
+        Route::get('/', [ScorecardTemplateController::class, 'index']);
+        Route::post('/', [ScorecardTemplateController::class, 'store']);
+        Route::get('/{id}', [ScorecardTemplateController::class, 'show']);
+        Route::put('/{id}', [ScorecardTemplateController::class, 'update']);
+        Route::delete('/{id}', [ScorecardTemplateController::class, 'destroy']);
     });
 
     // Send and Receive Emails

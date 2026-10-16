@@ -111,6 +111,7 @@ class ApplicantController extends Controller
         $applicant = Applicant::with([
             'statusLogs.changedByUser',
             'interviews.interviewer',
+            'interviews.scorecardTemplate',
             'emailLogs.sentByUser',
             'createdByUser'
         ])->findOrFail($id);
@@ -141,6 +142,7 @@ class ApplicantController extends Controller
             'cover_letter' => 'nullable|string|max:3000',
             'internal_notes' => 'nullable|string|max:3000',
             'skills' => 'nullable|array',
+            'availability' => 'nullable|array',
             'status' => 'required|in:applicant,participant,probation,accepted,rejected',
         ]);
 
@@ -193,6 +195,7 @@ class ApplicantController extends Controller
             'marital_status' => 'nullable|string|max:50',
             'social_links' => 'nullable|array',
             'portfolio_items' => 'nullable|array',
+            'availability' => 'nullable|array',
             'cover_letter' => 'nullable|string|max:5000',
             'internal_notes' => 'nullable|string|max:5000',
             'rating' => 'nullable|numeric|min:0|max:5',

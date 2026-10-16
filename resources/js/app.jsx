@@ -14,6 +14,7 @@ import DashboardPage from './Pages/DashboardPage';
 import ApplicantsPage from './Pages/ApplicantsPage';
 import ApplicantDetailPage from './Pages/ApplicantDetailPage';
 import InterviewsPage from './Pages/InterviewsPage';
+import ScorecardsPage from './Pages/ScorecardsPage';
 import ReportsPage from './Pages/ReportsPage';
 import EmailsPage from './Pages/EmailsPage';
 import UsersAndPermissionsPage from './Pages/UsersAndPermissionsPage';
@@ -75,6 +76,9 @@ function Router() {
     }
     if (route.startsWith('#/applicants')) {
         return <ApplicantsPage currentRoute={route} navigate={navigate} />;
+    }
+    if (route.startsWith('#/scorecards')) {
+        return <ScorecardsPage currentRoute={route} navigate={navigate} />;
     }
     if (route.startsWith('#/interviews')) {
         return <InterviewsPage currentRoute={route} navigate={navigate} />;

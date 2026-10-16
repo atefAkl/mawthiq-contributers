@@ -42,28 +42,139 @@ export default function AppLayout({ currentRoute, navigate, children }) {
         }
     };
 
-    const mainNavItems = [
-        { id: '#/dashboard', label: t('dashboard'), icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
-        { id: '#/applicants', label: t('applicants'), icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', perm: 'view_applicants' },
-        { id: '#/interviews', label: t('interviews'), icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-        { id: '#/reports', label: t('reports'), icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', perm: 'view_reports' },
-        { id: '#/emails', label: t('emails'), icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', perm: 'send_emails' },
-        { id: '#/users', label: t('usersAndRoles'), icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', perm: 'manage_users' },
+    // Two-Level Accordion Navigation Configuration (ADR-010)
+    const navSections = [
+        {
+            key: 'dashboard',
+            label: t('dashboard'),
+            icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
+            subItems: [
+                { id: '#/dashboard', label: t('dashboard') },
+            ]
+        },
+        {
+            key: 'interviews',
+            label: t('interviews'),
+            icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+            subItems: [
+                { id: '#/interviews', label: t('navInterviewsList') },
+                { id: '#/scorecards', label: t('navScorecards') },
+            ]
+        },
+        {
+            key: 'applicants',
+            label: t('applicants'),
+            icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
+            perm: 'view_applicants',
+            subItems: [
+                { id: '#/applicants', label: t('navApplicantsList') },
+                { id: '#/apply', label: t('navApplyPortal'), external: true },
+            ]
+        },
+        {
+            key: 'reports',
+            label: t('reports'),
+            icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+            perm: 'view_reports',
+            subItems: [
+                { id: '#/reports', label: t('reports') },
+            ]
+        },
+        {
+            key: 'emails',
+            label: t('emails'),
+            icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+            perm: 'send_emails',
+            subItems: [
+                { id: '#/emails', label: t('emails') },
+            ]
+        },
+        {
+            key: 'users',
+            label: t('usersAndRoles'),
+            icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
+            perm: 'manage_users',
+            subItems: [
+                { id: '#/users', label: t('usersAndRoles') },
+            ]
+        },
     ];
 
-    const filteredNavItems = mainNavItems.filter(item => !item.perm || hasPermission(item.perm));
+    const filteredSections = navSections.filter(section => !section.perm || hasPermission(section.perm));
 
-    // Resolve current page title for Breadcrumbs
-    const getBreadcrumbLabel = () => {
-        if (currentRoute.startsWith('#/applicants/')) return t('applicantProfileTitle');
-        if (currentRoute.startsWith('#/applicants')) return t('applicants');
-        if (currentRoute.startsWith('#/interviews')) return t('interviews');
-        if (currentRoute.startsWith('#/reports')) return t('reports');
-        if (currentRoute.startsWith('#/emails')) return t('emails');
-        if (currentRoute.startsWith('#/users')) return t('usersAndRoles');
-        if (currentRoute.startsWith('#/settings')) return t('settings');
-        if (currentRoute.startsWith('#/profile')) return t('profile');
-        return t('dashboard');
+    // Determine initial active accordion section based on currentRoute
+    const getActiveSectionForRoute = (route) => {
+        if (route.startsWith('#/interviews') || route.startsWith('#/scorecards')) return 'interviews';
+        if (route.startsWith('#/applicants')) return 'applicants';
+        if (route.startsWith('#/reports')) return 'reports';
+        if (route.startsWith('#/emails')) return 'emails';
+        if (route.startsWith('#/users')) return 'users';
+        if (route.startsWith('#/settings')) return 'settings';
+        return 'dashboard';
+    };
+
+    const [openSection, setOpenSection] = useState(() => getActiveSectionForRoute(currentRoute));
+
+    useEffect(() => {
+        setOpenSection(getActiveSectionForRoute(currentRoute));
+    }, [currentRoute]);
+
+    // Accordion click: only one section stays open at a time (ADR-010)
+    const handleToggleSection = (sectionKey, defaultSubRoute) => {
+        if (openSection === sectionKey) {
+            setOpenSection(null);
+        } else {
+            setOpenSection(sectionKey);
+            // If section only has 1 subItem, navigate directly
+            const sec = navSections.find(s => s.key === sectionKey);
+            if (sec && sec.subItems.length === 1 && !sec.subItems[0].external) {
+                navigate(sec.subItems[0].id);
+            }
+        }
+    };
+
+    // Breadcrumb parts generator
+    const getBreadcrumbParts = () => {
+        if (currentRoute.startsWith('#/scorecards')) {
+            return [
+                { label: t('interviews'), route: '#/interviews' },
+                { label: t('navScorecards'), active: true }
+            ];
+        }
+        if (currentRoute.startsWith('#/interviews')) {
+            return [
+                { label: t('interviews'), route: '#/interviews' },
+                { label: t('navInterviewsList'), active: true }
+            ];
+        }
+        if (currentRoute.startsWith('#/applicants/')) {
+            return [
+                { label: t('applicants'), route: '#/applicants' },
+                { label: t('applicantProfileTitle'), active: true }
+            ];
+        }
+        if (currentRoute.startsWith('#/applicants')) {
+            return [
+                { label: t('applicants'), route: '#/applicants' },
+                { label: t('navApplicantsList'), active: true }
+            ];
+        }
+        if (currentRoute.startsWith('#/reports')) {
+            return [{ label: t('reports'), active: true }];
+        }
+        if (currentRoute.startsWith('#/emails')) {
+            return [{ label: t('emails'), active: true }];
+        }
+        if (currentRoute.startsWith('#/users')) {
+            return [{ label: t('usersAndRoles'), active: true }];
+        }
+        if (currentRoute.startsWith('#/settings')) {
+            return [{ label: t('settings'), active: true }];
+        }
+        if (currentRoute.startsWith('#/profile')) {
+            return [{ label: t('profile'), active: true }];
+        }
+        return [{ label: t('dashboard'), active: true }];
     };
 
     const isSettingsActive = currentRoute.startsWith('#/settings');
@@ -92,25 +203,75 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                     </div>
                 </div>
 
-                {/* Main Navigation */}
-                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                    {filteredNavItems.map(item => {
-                        const active = currentRoute.startsWith(item.id);
+                {/* Main Navigation - Two-Level Accordion (ADR-010) */}
+                <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+                    {filteredSections.map(section => {
+                        const isOpen = openSection === section.key;
+                        const isSectionActive = section.subItems.some(sub => currentRoute.startsWith(sub.id));
+
                         return (
-                            <button
-                                key={item.id}
-                                onClick={() => navigate(item.id)}
-                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all text-start cursor-pointer ${
-                                    active
-                                        ? 'bg-blue-50/90 text-blue-600 font-bold'
-                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
-                                }`}
-                            >
-                                <svg className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={item.icon} />
-                                </svg>
-                                <span className="truncate">{item.label}</span>
-                            </button>
+                            <div key={section.key} className="rounded-lg transition-colors">
+                                {/* Level 1: Accordion Section Header */}
+                                <button
+                                    onClick={() => handleToggleSection(section.key)}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all text-start cursor-pointer ${
+                                        isSectionActive
+                                            ? 'bg-blue-50/80 text-blue-700 font-bold'
+                                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <svg className={`w-4 h-4 shrink-0 ${isSectionActive ? 'text-blue-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={section.icon} />
+                                        </svg>
+                                        <span className="truncate">{section.label}</span>
+                                    </div>
+                                    {section.subItems.length > 1 && (
+                                        <svg
+                                            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-blue-600' : ''}`}
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    )}
+                                </button>
+
+                                {/* Level 2: Sub-items Accordion Drawer */}
+                                {isOpen && (
+                                    <div className="ms-4 ps-2.5 my-1 space-y-0.5 border-s border-slate-200">
+                                        {section.subItems.map(subItem => {
+                                            const isSubActive = currentRoute.startsWith(subItem.id);
+                                            return (
+                                                <button
+                                                    key={subItem.id}
+                                                    onClick={() => {
+                                                        if (subItem.external) {
+                                                            window.open(subItem.id, '_blank');
+                                                        } else {
+                                                            navigate(subItem.id);
+                                                        }
+                                                    }}
+                                                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] transition-all text-start cursor-pointer ${
+                                                        isSubActive
+                                                            ? 'text-blue-600 font-bold bg-blue-50/90'
+                                                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                                                    }`}
+                                                >
+                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                                                    <span className="truncate">{subItem.label}</span>
+                                                    {subItem.external && (
+                                                        <svg className="w-3 h-3 text-slate-400 ms-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
                 </nav>
@@ -159,27 +320,69 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                             </button>
                         </div>
 
-                        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                            {filteredNavItems.map(item => {
-                                const active = currentRoute.startsWith(item.id);
+                        {/* Mobile Two-Level Navigation */}
+                        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+                            {filteredSections.map(section => {
+                                const isOpen = openSection === section.key;
+                                const isSectionActive = section.subItems.some(sub => currentRoute.startsWith(sub.id));
+
                                 return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => {
-                                            navigate(item.id);
-                                            setSidebarOpen(false);
-                                        }}
-                                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs transition-all text-start ${
-                                            active
-                                                ? 'bg-blue-50 text-blue-600 font-bold'
-                                                : 'text-slate-600 hover:bg-slate-50 font-medium'
-                                        }`}
-                                    >
-                                        <svg className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={item.icon} />
-                                        </svg>
-                                        <span>{item.label}</span>
-                                    </button>
+                                    <div key={section.key} className="rounded-lg">
+                                        <button
+                                            onClick={() => handleToggleSection(section.key)}
+                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all text-start ${
+                                                isSectionActive
+                                                    ? 'bg-blue-50 text-blue-700 font-bold'
+                                                    : 'text-slate-700 hover:bg-slate-50 font-medium'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                <svg className={`w-4 h-4 shrink-0 ${isSectionActive ? 'text-blue-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={section.icon} />
+                                                </svg>
+                                                <span>{section.label}</span>
+                                            </div>
+                                            {section.subItems.length > 1 && (
+                                                <svg
+                                                    className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isOpen ? 'rotate-180 text-blue-600' : ''}`}
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            )}
+                                        </button>
+
+                                        {isOpen && (
+                                            <div className="ms-4 ps-2.5 my-1 space-y-0.5 border-s border-slate-200">
+                                                {section.subItems.map(subItem => {
+                                                    const isSubActive = currentRoute.startsWith(subItem.id);
+                                                    return (
+                                                        <button
+                                                            key={subItem.id}
+                                                            onClick={() => {
+                                                                if (subItem.external) {
+                                                                    window.open(subItem.id, '_blank');
+                                                                } else {
+                                                                    navigate(subItem.id);
+                                                                    setSidebarOpen(false);
+                                                                }
+                                                            }}
+                                                            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] text-start ${
+                                                                isSubActive
+                                                                    ? 'text-blue-600 font-bold bg-blue-50'
+                                                                    : 'text-slate-500 hover:bg-slate-50 font-medium'
+                                                            }`}
+                                                        >
+                                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSubActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                                                            <span>{subItem.label}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </nav>
@@ -222,11 +425,11 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                             </svg>
                         </button>
 
-                        {/* Breadcrumbs */}
-                        <div className="flex items-center gap-2 text-xs">
+                        {/* Multi-Level Breadcrumbs */}
+                        <div className="flex items-center gap-1.5 text-xs">
                             <button
                                 onClick={() => navigate('#/dashboard')}
-                                className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
+                                className="flex items-center gap-1 text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
                             >
                                 <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -234,11 +437,23 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                                 <span className="hidden sm:inline">{t('dashboard')}</span>
                             </button>
 
-                            <span className="text-slate-300 font-bold">‹</span>
-
-                            <span className="font-bold text-blue-600 truncate">
-                                {getBreadcrumbLabel()}
-                            </span>
+                            {getBreadcrumbParts().map((part, index) => (
+                                <React.Fragment key={index}>
+                                    <span className="text-slate-300 font-bold">‹</span>
+                                    {part.route && !part.active ? (
+                                        <button
+                                            onClick={() => navigate(part.route)}
+                                            className="text-slate-500 hover:text-slate-800 font-medium cursor-pointer truncate max-w-[120px] sm:max-w-none"
+                                        >
+                                            {part.label}
+                                        </button>
+                                    ) : (
+                                        <span className="font-bold text-blue-600 truncate max-w-[150px] sm:max-w-none">
+                                            {part.label}
+                                        </span>
+                                    )}
+                                </React.Fragment>
+                            ))}
                         </div>
 
                         {/* Public Portal Badge Pill */}
