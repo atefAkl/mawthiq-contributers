@@ -2,17 +2,17 @@ import React from 'react';
 
 const VARIANT_STYLES = {
     primary: 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-2xs',
-    secondary: 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs',
+    secondary: 'bg-white hover:bg-slate-50 text-slate-600 hover:text-blue-600 border border-slate-200 shadow-2xs',
     active: 'bg-blue-50 hover:bg-blue-100/80 text-blue-600 border border-blue-200 shadow-2xs',
-    success: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-2xs',
-    warning: 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 shadow-2xs',
-    danger: 'bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 shadow-2xs',
-    ghost: 'bg-transparent hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-transparent',
+    success: 'bg-white hover:bg-slate-50 text-slate-600 hover:text-blue-600 border border-slate-200 shadow-2xs',
+    warning: 'bg-white hover:bg-slate-50 text-slate-600 hover:text-blue-600 border border-slate-200 shadow-2xs',
+    danger: 'bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 shadow-2xs',
+    ghost: 'bg-transparent hover:bg-slate-100 text-slate-400 hover:text-blue-600 border border-transparent',
 };
 
 const SIZE_STYLES = {
     md: 'w-9 h-9 rounded-lg',
-    sm: 'w-8 h-8 rounded-lg',
+    sm: 'w-7 h-7 rounded-md',
 };
 
 export default function IconButton({

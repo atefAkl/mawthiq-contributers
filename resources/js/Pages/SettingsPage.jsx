@@ -230,7 +230,7 @@ export default function SettingsPage({ currentRoute, navigate }) {
                                     onChange={e => handleChange('applications_open', e.target.checked ? '1' : '0')}
                                     className="sr-only peer"
                                 />
-                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
 
@@ -259,13 +259,13 @@ export default function SettingsPage({ currentRoute, navigate }) {
                                 {positions.map((pos, idx) => (
                                     <span
                                         key={idx}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-semibold"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold"
                                     >
                                         <span>{pos}</span>
                                         <button
                                             type="button"
                                             onClick={() => handleRemovePosition(pos)}
-                                            className="text-indigo-400 hover:text-indigo-800 font-bold"
+                                            className="text-blue-400 hover:text-blue-800 font-bold"
                                         >
                                             &times;
                                         </button>
@@ -453,7 +453,7 @@ export default function SettingsPage({ currentRoute, navigate }) {
                                         type="button"
                                         onClick={handleSendTestEmail}
                                         disabled={testingEmail}
-                                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all disabled:opacity-50 shrink-0"
+                                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50 shrink-0"
                                     >
                                         {testingEmail ? 'جاري الإرسال...' : '🚀 إرسال تجريبي (SMTP)'}
                                     </button>

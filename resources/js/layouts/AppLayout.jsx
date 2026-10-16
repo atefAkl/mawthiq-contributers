@@ -6,7 +6,7 @@ import { api } from '../api/client';
 
 export default function AppLayout({ currentRoute, navigate, children }) {
     const { user, logout, hasPermission } = useAuth();
-    const { t, lang, toggleLang, isRtl } = useLanguage();
+    const { t, lang, toggleLang } = useLanguage();
     const { showToast } = useToast();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,7 +27,7 @@ export default function AppLayout({ currentRoute, navigate, children }) {
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000); // 30s poll
+        const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
 
@@ -42,107 +42,253 @@ export default function AppLayout({ currentRoute, navigate, children }) {
         }
     };
 
-    const navItems = [
-        { id: '#/dashboard', label: t('dashboard'), icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-        { id: '#/applicants', label: t('applicants'), icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', perm: 'view_applicants' },
+    const mainNavItems = [
+        { id: '#/dashboard', label: t('dashboard'), icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
+        { id: '#/applicants', label: t('applicants'), icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', perm: 'view_applicants' },
         { id: '#/interviews', label: t('interviews'), icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
         { id: '#/reports', label: t('reports'), icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', perm: 'view_reports' },
         { id: '#/emails', label: t('emails'), icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', perm: 'send_emails' },
         { id: '#/users', label: t('usersAndRoles'), icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', perm: 'manage_users' },
-        { id: '#/settings', label: t('settings'), icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
     ];
 
-    const filteredNavItems = navItems.filter(item => !item.perm || hasPermission(item.perm));
+    const filteredNavItems = mainNavItems.filter(item => !item.perm || hasPermission(item.perm));
+
+    // Resolve current page title for Breadcrumbs
+    const getBreadcrumbLabel = () => {
+        if (currentRoute.startsWith('#/applicants/')) return t('applicantProfileTitle');
+        if (currentRoute.startsWith('#/applicants')) return t('applicants');
+        if (currentRoute.startsWith('#/interviews')) return t('interviews');
+        if (currentRoute.startsWith('#/reports')) return t('reports');
+        if (currentRoute.startsWith('#/emails')) return t('emails');
+        if (currentRoute.startsWith('#/users')) return t('usersAndRoles');
+        if (currentRoute.startsWith('#/settings')) return t('settings');
+        if (currentRoute.startsWith('#/profile')) return t('profile');
+        return t('dashboard');
+    };
+
+    const isSettingsActive = currentRoute.startsWith('#/settings');
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col antialiased">
-            {/* Top Navigation Bar */}
-            <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    {/* Left side (or Right side in RTL): Brand & Mobile Menu Button */}
-                    <div className="flex items-center gap-3">
+        <div className="min-h-screen bg-slate-50/80 flex antialiased text-slate-800">
+            {/* Desktop Full-Height Sidebar (Right in RTL, Left in LTR) */}
+            <aside className="hidden lg:flex w-60 shrink-0 bg-white border-e border-slate-200 flex-col sticky top-0 h-screen z-30">
+                {/* Brand Header */}
+                <div
+                    onClick={() => navigate('#/dashboard')}
+                    className="h-14 px-4 border-b border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-50/60 transition-colors"
+                >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
+                            M
+                        </div>
+                        <div className="min-w-0">
+                            <h1 className="text-xs font-bold text-slate-900 truncate leading-tight">
+                                {t('appNameShort')}
+                            </h1>
+                            <p className="text-[10px] text-slate-400 font-medium truncate">
+                                {t('dashboard')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Navigation */}
+                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                    {filteredNavItems.map(item => {
+                        const active = currentRoute.startsWith(item.id);
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => navigate(item.id)}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all text-start cursor-pointer ${
+                                    active
+                                        ? 'bg-blue-50/90 text-blue-600 font-bold'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                                }`}
+                            >
+                                <svg className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={item.icon} />
+                                </svg>
+                                <span className="truncate">{item.label}</span>
+                            </button>
+                        );
+                    })}
+                </nav>
+
+                {/* Bottom Fixed Settings Link (Matches Reference Layout) */}
+                <div className="p-3 border-t border-slate-100">
+                    <button
+                        onClick={() => navigate('#/settings')}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all text-start cursor-pointer ${
+                            isSettingsActive
+                                ? 'bg-blue-50/90 text-blue-600 font-bold'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                        }`}
+                    >
+                        <svg className={`w-4 h-4 shrink-0 ${isSettingsActive ? 'text-blue-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="truncate">{t('settings')}</span>
+                    </button>
+                </div>
+            </aside>
+
+            {/* Mobile Sidebar Drawer */}
+            {sidebarOpen && (
+                <div className="fixed inset-0 z-50 lg:hidden flex">
+                    <div
+                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                    <div className="relative w-64 bg-white h-full shadow-xl flex flex-col z-10">
+                        <div className="h-14 px-4 border-b border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                                    M
+                                </div>
+                                <span className="font-bold text-xs text-slate-900">{t('appNameShort')}</span>
+                            </div>
+                            <button
+                                onClick={() => setSidebarOpen(false)}
+                                className="p-1 rounded-md text-slate-400 hover:text-slate-600"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                            {filteredNavItems.map(item => {
+                                const active = currentRoute.startsWith(item.id);
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            navigate(item.id);
+                                            setSidebarOpen(false);
+                                        }}
+                                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs transition-all text-start ${
+                                            active
+                                                ? 'bg-blue-50 text-blue-600 font-bold'
+                                                : 'text-slate-600 hover:bg-slate-50 font-medium'
+                                        }`}
+                                    >
+                                        <svg className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={item.icon} />
+                                        </svg>
+                                        <span>{item.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
+
+                        <div className="p-3 border-t border-slate-100 space-y-1.5">
+                            <button
+                                onClick={() => {
+                                    navigate('#/settings');
+                                    setSidebarOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-600 hover:bg-slate-50 font-medium"
+                            >
+                                <span>⚙️</span>
+                                <span>{t('settings')}</span>
+                            </button>
+                            <button
+                                onClick={logout}
+                                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100"
+                            >
+                                {t('logout')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Main Viewport Column */}
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* Top Header Bar (Matches Reference Layout) */}
+                <header className="sticky top-0 z-20 h-14 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between gap-4">
+                    {/* Start Side: Mobile Menu + Breadcrumbs + Quick Portal Badge */}
+                    <div className="flex items-center gap-3 min-w-0">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
+                            className="lg:hidden p-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                             aria-label="Toggle menu"
                         >
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
 
-                        <div
-                            onClick={() => navigate('#/dashboard')}
-                            className="flex items-center gap-3 cursor-pointer group"
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 group-hover:scale-105 transition-transform">
-                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        {/* Breadcrumbs */}
+                        <div className="flex items-center gap-2 text-xs">
+                            <button
+                                onClick={() => navigate('#/dashboard')}
+                                className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
+                            >
+                                <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                 </svg>
-                            </div>
-                            <div className="hidden sm:block">
-                                <h1 className="text-base font-bold text-slate-800 leading-tight">
-                                    {t('appName')}
-                                </h1>
-                                <p className="text-xs text-slate-500 font-medium">
-                                    {t('appSubtitle')}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                                <span className="hidden sm:inline">{t('dashboard')}</span>
+                            </button>
 
-                    {/* Right side: Actions, Language Toggle, Notifications, Profile */}
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        {/* Public Apply Portal Link */}
+                            <span className="text-slate-300 font-bold">‹</span>
+
+                            <span className="font-bold text-blue-600 truncate">
+                                {getBreadcrumbLabel()}
+                            </span>
+                        </div>
+
+                        {/* Public Portal Badge Pill */}
                         <a
                             href="#/apply"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold text-blue-600 bg-blue-50/70 hover:bg-blue-100/70 transition-colors border border-blue-200/70"
                         >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                            {t('applyPublic')}
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                            <span>{t('applyPublic')}</span>
                         </a>
+                    </div>
 
-                        {/* Multi-lingual Layout Switcher */}
+                    {/* End Side: Language Button, Notifications, User Profile Box */}
+                    <div className="flex items-center gap-2.5">
+                        {/* Compact Language Toggle Box (EN / AR) */}
                         <button
                             onClick={toggleLang}
-                            className="px-2.5 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 text-xs font-bold rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                             aria-label={t('switchLanguage')}
                         >
-                            <span className="text-sm">🌐</span>
-                            <span>{lang === 'ar' ? 'English' : 'عربي'}</span>
+                            {lang === 'ar' ? 'EN' : 'AR'}
                         </button>
 
-                        {/* Flash / In-app Notifications Dropdown */}
+                        {/* In-App Notifications */}
                         <div className="relative">
                             <button
                                 onClick={() => {
                                     setNotificationsOpen(!notificationsOpen);
                                     setProfileMenuOpen(false);
                                 }}
-                                className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none"
+                                aria-label={t('notifications')}
+                                className="relative p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
                                 {unreadCount > 0 && (
-                                    <span className="absolute top-1 end-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                                        {unreadCount > 9 ? '9+' : unreadCount}
-                                    </span>
+                                    <span className="absolute top-1 end-1 w-2 h-2 bg-blue-600 rounded-full" />
                                 )}
                             </button>
 
-                            {/* Notifications Dropdown Panel */}
                             {notificationsOpen && (
-                                <div className="absolute end-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                                    <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
-                                        <div className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                <div className="absolute end-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-slate-200 py-1.5 z-50">
+                                    <div className="px-3.5 py-2 border-b border-slate-100 flex items-center justify-between">
+                                        <div className="font-bold text-xs text-slate-800 flex items-center gap-2">
                                             <span>{t('notifications')}</span>
                                             {unreadCount > 0 && (
-                                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
+                                                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600">
                                                     {unreadCount}
                                                 </span>
                                             )}
@@ -150,15 +296,15 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                                         {unreadCount > 0 && (
                                             <button
                                                 onClick={markAllRead}
-                                                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+                                                className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold cursor-pointer"
                                             >
                                                 {t('markAllRead')}
                                             </button>
                                         )}
                                     </div>
-                                    <div className="max-h-72 overflow-y-auto divide-y divide-slate-50">
+                                    <div className="max-h-64 overflow-y-auto divide-y divide-slate-100">
                                         {notifications.length === 0 ? (
-                                            <div className="py-8 text-center text-xs text-slate-400">
+                                            <div className="py-6 text-center text-xs text-slate-400">
                                                 {t('noNotifications')}
                                             </div>
                                         ) : (
@@ -169,12 +315,12 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                                                         if (notif.action_url) navigate('#' + notif.action_url);
                                                         setNotificationsOpen(false);
                                                     }}
-                                                    className={`p-3.5 hover:bg-slate-50 cursor-pointer transition-colors ${!notif.is_read ? 'bg-indigo-50/40' : ''}`}
+                                                    className={`p-3 hover:bg-slate-50 cursor-pointer transition-colors ${!notif.is_read ? 'bg-blue-50/30' : ''}`}
                                                 >
                                                     <div className="text-xs font-bold text-slate-800 mb-0.5">
                                                         {notif.title}
                                                     </div>
-                                                    <div className="text-xs text-slate-600 leading-relaxed">
+                                                    <div className="text-[11px] text-slate-500 leading-relaxed">
                                                         {notif.message}
                                                     </div>
                                                 </div>
@@ -185,50 +331,50 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                             )}
                         </div>
 
-                        {/* Active User Profile Menu */}
+                        <div className="h-5 w-px bg-slate-200 hidden sm:block" />
+
+                        {/* User Profile Box (Matches Reference Top-Left Box) */}
                         <div className="relative">
                             <button
                                 onClick={() => {
                                     setProfileMenuOpen(!profileMenuOpen);
                                     setNotificationsOpen(false);
                                 }}
-                                className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-100 transition-colors focus:outline-none"
+                                className="flex items-center gap-2.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
                             >
-                                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-900 text-white font-bold text-sm flex items-center justify-center shadow-sm">
-                                    {user?.name ? user.name.charAt(0) : 'U'}
-                                </div>
-                                <div className="hidden lg:block text-start">
-                                    <div className="text-xs font-bold text-slate-800 leading-none">
-                                        {user?.name || 'User'}
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 font-medium mt-0.5">
-                                        {lang === 'en' ? (user?.role?.display_name_en || user?.role?.name || 'Super Admin') : (user?.role?.display_name_ar || user?.role?.name || 'Super Admin')}
-                                    </div>
-                                </div>
-                                <svg className="w-4 h-4 text-slate-400 hidden lg:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-3.5 h-3.5 text-slate-400 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
+                                <div className="hidden sm:block text-end">
+                                    <div className="text-xs font-bold text-slate-800 leading-none">
+                                        {user?.name || 'Admin'}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                        {user?.email || ''}
+                                    </div>
+                                </div>
+                                <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
                             </button>
 
-                            {/* Profile Dropdown Panel */}
                             {profileMenuOpen && (
-                                <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                                    <div className="px-4 py-2 border-b border-slate-100">
+                                <div className="absolute end-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-slate-200 py-1.5 z-50">
+                                    <div className="px-3.5 py-2 border-b border-slate-100">
                                         <p className="text-xs font-bold text-slate-800 truncate">{user?.name}</p>
-                                        <p className="text-[11px] text-slate-500 truncate">{user?.email}</p>
-                                        <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            {lang === 'en' ? (user?.role?.display_name_en || t('active')) : (user?.role?.display_name_ar || t('active'))}
-                                        </span>
+                                        <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
                                     </div>
                                     <button
                                         onClick={() => {
                                             navigate('#/profile');
                                             setProfileMenuOpen(false);
                                         }}
-                                        className="w-full px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-start"
+                                        className="w-full px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-start cursor-pointer"
                                     >
                                         <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                         {t('profile')}
                                     </button>
@@ -237,20 +383,20 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                                             navigate('#/settings');
                                             setProfileMenuOpen(false);
                                         }}
-                                        className="w-full px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-start"
+                                        className="w-full px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-start cursor-pointer"
                                     >
                                         <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                         </svg>
                                         {t('settings')}
                                     </button>
-                                    <div className="border-t border-slate-100 my-1"></div>
+                                    <div className="border-t border-slate-100 my-1" />
                                     <button
                                         onClick={logout}
-                                        className="w-full px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 text-start"
+                                        className="w-full px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 text-start cursor-pointer"
                                     >
                                         <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                         </svg>
                                         {t('logout')}
                                     </button>
@@ -258,108 +404,10 @@ export default function AppLayout({ currentRoute, navigate, children }) {
                             )}
                         </div>
                     </div>
-                </div>
-            </header>
+                </header>
 
-            {/* Layout Body: Sidebar + Main Content */}
-            <div className="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">
-                {/* Desktop Sidebar */}
-                <aside className="hidden lg:block w-64 shrink-0">
-                    <div className="sticky top-24 bg-white rounded-2xl border border-slate-200 p-3 shadow-sm space-y-1">
-                        {filteredNavItems.map(item => {
-                            const active = currentRoute.startsWith(item.id);
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => navigate(item.id)}
-                                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-start ${
-                                        active
-                                            ? 'bg-gradient-to-r from-indigo-50 to-sky-50 text-indigo-700 border border-indigo-200/80 shadow-xs'
-                                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <svg className={`w-5 h-5 shrink-0 ${active ? 'text-indigo-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                                    </svg>
-                                    <span>{item.label}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </aside>
-
-                {/* Mobile Drawer (Dynamic Display on Mobile) */}
-                {sidebarOpen && (
-                    <div className="fixed inset-0 z-50 lg:hidden flex">
-                        <div
-                            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
-                            onClick={() => setSidebarOpen(false)}
-                        ></div>
-                        <div className="relative w-72 bg-white h-full shadow-2xl p-5 flex flex-col z-10">
-                            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold">
-                                        C
-                                    </div>
-                                    <span className="font-bold text-sm text-slate-800">{t('appName')}</span>
-                                </div>
-                                <button
-                                    onClick={() => setSidebarOpen(false)}
-                                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
-                                >
-                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <nav className="flex-1 space-y-1 overflow-y-auto">
-                                {filteredNavItems.map(item => {
-                                    const active = currentRoute.startsWith(item.id);
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => {
-                                                navigate(item.id);
-                                                setSidebarOpen(false);
-                                            }}
-                                            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-all text-start ${
-                                                active
-                                                    ? 'bg-indigo-50 text-indigo-700 font-bold'
-                                                    : 'text-slate-600 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            <svg className={`w-5 h-5 shrink-0 ${active ? 'text-indigo-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                                            </svg>
-                                            <span>{item.label}</span>
-                                        </button>
-                                    );
-                                })}
-                            </nav>
-
-                            <div className="pt-4 border-t border-slate-100 space-y-2">
-                                <a
-                                    href="#/apply"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200"
-                                >
-                                    {t('applyPublic')}
-                                </a>
-                                <button
-                                    onClick={logout}
-                                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100"
-                                >
-                                    {t('logout')}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Main Content Viewport */}
-                <main className="flex-1 min-w-0">
+                {/* Page Content */}
+                <main className="flex-1 p-4 sm:p-6 max-w-[1600px] w-full mx-auto">
                     {children}
                 </main>
             </div>

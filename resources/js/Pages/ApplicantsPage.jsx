@@ -231,7 +231,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
     const getStatusBadge = (status) => {
         const styles = {
             applicant: 'bg-blue-50 text-blue-700 border-blue-200',
-            participant: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+            participant: 'bg-blue-50 text-blue-700 border-blue-200',
             probation: 'bg-amber-50 text-amber-700 border-amber-200',
             accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
             rejected: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -256,30 +256,14 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
 
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
-            <div className="space-y-6">
-                {/* Standardized Page Header Box */}
+            <div className="space-y-4">
+                {/* 1. Standardized Page Header Box (Matches Reference Top Box) */}
                 <PageHeader
                     title={t('applicants')}
                     subtitle={t('applicantsSubtitle')}
                     icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 >
-                    {/* View Switcher: Table */}
-                    <IconButton
-                        variant={viewMode === 'table' ? 'active' : 'secondary'}
-                        onClick={() => setViewMode('table')}
-                        tooltip={t('tableView')}
-                        icon="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-
-                    {/* View Switcher: Kanban */}
-                    <IconButton
-                        variant={viewMode === 'kanban' ? 'active' : 'secondary'}
-                        onClick={() => setViewMode('kanban')}
-                        tooltip={t('kanbanView')}
-                        icon="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-                    />
-
-                    {/* Export CSV (Document with download arrow like reference screenshot) */}
+                    {/* Export CSV */}
                     <IconButton
                         href="/api/applicants/export"
                         download
@@ -298,40 +282,80 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                     )}
                 </PageHeader>
 
-                {/* Filter Tabs & Search */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-xs space-y-3">
-                    {/* Status Tabs */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                        {statusTabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveStatus(tab.id)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                                    activeStatus === tab.id
-                                        ? 'bg-indigo-600 text-white shadow-xs'
-                                        : 'text-slate-600 hover:bg-slate-100'
-                                }`}
-                            >
-                                <span>{tab.label}</span>
-                                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                                    activeStatus === tab.id ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-700'
-                                }`}>
-                                    {tab.count}
-                                </span>
-                            </button>
-                        ))}
+                {/* 2. KPI Summary Cards Row (4 Stat Cards matching Reference Layout) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
+                        <div>
+                            <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold mt-1.5">{t('totalApplicants')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">
+                            {counts.all || 0}
+                        </div>
                     </div>
 
-                    {/* Search Bar */}
-                    <form onSubmit={handleSearch} className="flex gap-2">
-                        <div className="relative flex-1">
+                    <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
+                        <div>
+                            <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold mt-1.5">{t('status_accepted')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">
+                            {counts.accepted || 0}
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
+                        <div>
+                            <div className="w-7 h-7 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold mt-1.5">{t('inScreeningAndProbation')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">
+                            {(counts.participant || 0) + (counts.probation || 0)}
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
+                        <div>
+                            <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold mt-1.5">{t('status_applicant')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">
+                            {counts.applicant || 0}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Unified Data Container Card (Toolbar + Status Pills + Table/Board + Pagination) */}
+                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
+                    {/* Top Toolbar Row: Search on Start, View & Refresh Icons on End */}
+                    <div className="p-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                        <form onSubmit={handleSearch} className="relative w-full sm:w-80">
                             <input
                                 type="text"
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                placeholder="ابحث بالاسم، البريد، الهاتف، رقم الطلب، أو التخصص..."
-                                className="w-full px-3.5 py-2 pe-10 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                placeholder={t('searchPlaceholder')}
+                                className="w-full ps-9 pe-8 py-1.5 rounded-md border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                             />
+                            <svg className="w-4 h-4 text-slate-400 absolute start-3 top-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
                             {search && (
                                 <button
                                     type="button"
@@ -339,298 +363,304 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                         setSearch('');
                                         loadApplicants(1, activeStatus, '');
                                     }}
-                                    className="absolute end-3 top-2 text-slate-400 hover:text-slate-600 text-xs"
+                                    className="absolute end-2.5 top-1.5 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                                 >
                                     &times;
                                 </button>
                             )}
+                        </form>
+
+                        <div className="flex items-center gap-1.5">
+                            <IconButton
+                                size="sm"
+                                onClick={() => loadApplicants(currentPage, activeStatus, search)}
+                                tooltip={t('refresh')}
+                                icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                            <div className="h-4 w-px bg-slate-200 mx-0.5" />
+                            <IconButton
+                                size="sm"
+                                variant={viewMode === 'table' ? 'active' : 'secondary'}
+                                onClick={() => setViewMode('table')}
+                                tooltip={t('tableView')}
+                                icon="M4 6h16M4 10h16M4 14h16M4 18h16"
+                            />
+                            <IconButton
+                                size="sm"
+                                variant={viewMode === 'kanban' ? 'active' : 'secondary'}
+                                onClick={() => setViewMode('kanban')}
+                                tooltip={t('kanbanView')}
+                                icon="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                            />
                         </div>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-colors"
-                        >
-                            {t('search')}
-                        </button>
-                    </form>
-                </div>
+                    </div>
 
-                {/* Content View: Table View OR Kanban View */}
-                {viewMode === 'table' ? (
-                    /* Table View */
-                    <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-start text-xs text-slate-700">
-                                <thead className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
-                                    <tr>
-                                        <th className="px-4 py-3.5 text-start">رقم الطلب / الاسم</th>
-                                        <th className="px-4 py-3.5 text-start">الدور / الوظيفة</th>
-                                        <th className="px-4 py-3.5 text-start">الخبرة والموقع</th>
-                                        <th className="px-4 py-3.5 text-start">الحالة</th>
-                                        <th className="px-4 py-3.5 text-start">التقييم</th>
-                                        <th className="px-4 py-3.5 text-start">تاريخ التقديم</th>
-                                        <th className="px-4 py-3.5 text-center">الإجراءات</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {loading ? (
+                    {/* Status Filter Pills Row (Matches Reference Filter Buttons) */}
+                    <div className="px-3.5 py-2.5 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                        {statusTabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveStatus(tab.id)}
+                                className={`px-3 py-1 rounded-md text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                                    activeStatus === tab.id
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Content View: Table View OR Kanban View */}
+                    {viewMode === 'table' ? (
+                        <div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-start text-xs text-slate-700">
+                                    <thead className="bg-white border-b border-slate-200 text-[11px] font-bold text-slate-500">
                                         <tr>
-                                            <td colSpan="7" className="py-12 text-center text-slate-400">
-                                                <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                                جاري تحميل المتقدمين...
-                                            </td>
+                                            <th className="px-4 py-3 text-start"># {t('applicationReferenceNo').replace(':', '')}</th>
+                                            <th className="px-4 py-3 text-start">{t('fullName')}</th>
+                                            <th className="px-4 py-3 text-start">{t('position')}</th>
+                                            <th className="px-4 py-3 text-start">{t('dateCol')}</th>
+                                            <th className="px-4 py-3 text-start">{t('statusCol')}</th>
+                                            <th className="px-4 py-3 text-center">{t('actions')}</th>
                                         </tr>
-                                    ) : applicants.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="7" className="py-12 text-center text-slate-400">
-                                                لا يوجد متقدمون يطابقون معايير البحث الحالية.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        applicants.map(app => (
-                                             <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
-                                                <td className="px-4 py-3.5">
-                                                    <div
-                                                        onClick={() => navigate(`#/applicants/${app.id}`)}
-                                                        className="font-bold text-slate-800 text-xs hover:text-indigo-600 cursor-pointer transition-colors"
-                                                    >
-                                                        {app.full_name}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                                                        {app.application_no} &bull; {app.email}
-                                                    </div>
-                                                </td>
-
-                                                <td className="px-4 py-3.5">
-                                                    <span className="font-semibold text-slate-700 block">
-                                                        {app.position}
-                                                    </span>
-                                                    <span className="text-[11px] text-slate-400">
-                                                        {app.education_level || '—'}
-                                                    </span>
-                                                </td>
-
-                                                <td className="px-4 py-3.5">
-                                                    <div>{app.experience_years} سنوات خبرة</div>
-                                                    <div className="text-[11px] text-slate-400">{app.city ? `${app.city}، ` : ''}{app.country}</div>
-                                                </td>
-
-                                                <td className="px-4 py-3.5">
-                                                    {getStatusBadge(app.status)}
-                                                </td>
-
-                                                <td className="px-4 py-3.5">
-                                                    {app.rating > 0 ? (
-                                                        <span className="inline-flex items-center gap-1 font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
-                                                            ★ {app.rating}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-slate-400 text-[11px]">بدون تقييم</span>
-                                                    )}
-                                                </td>
-
-                                                <td className="px-4 py-3.5 text-slate-400 text-[11px]">
-                                                    {new Date(app.created_at).toLocaleDateString('ar-EG', { dateStyle: 'medium' })}
-                                                </td>
-
-                                                <td className="px-4 py-3.5 text-center">
-                                                    <div className="inline-flex items-center gap-1">
-                                                        {/* View Details Standalone Page */}
-                                                        <IconButton
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            tooltipPosition="top"
-                                                            onClick={() => navigate(`#/applicants/${app.id}`)}
-                                                            tooltip="عرض وتعديل ملف المتقدم"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                            </svg>
-                                                        </IconButton>
-
-                                                        {/* Change Status / Promote (Icon Button) */}
-                                                        {hasPermission('promote_applicants') && (
-                                                            <IconButton
-                                                                size="sm"
-                                                                variant="warning"
-                                                                tooltipPosition="top"
-                                                                onClick={() => openStatusModal(app)}
-                                                                tooltip="ترقية وتغيير حالة المتقدم"
-                                                                icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                                                            />
-                                                        )}
-
-                                                        {/* Schedule Interview */}
-                                                        {hasPermission('schedule_interviews') && (
-                                                            <IconButton
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                tooltipPosition="top"
-                                                                onClick={() => {
-                                                                    setSelectedApplicant(app);
-                                                                    setInterviewForm({
-                                                                        scheduled_at: '',
-                                                                        interview_type: 'online',
-                                                                        meeting_link: '',
-                                                                        location: '',
-                                                                        send_invitation_email: true,
-                                                                    });
-                                                                    setInterviewModalOpen(true);
-                                                                }}
-                                                                tooltip="جدولة مقابلة شخصية"
-                                                                icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                                            />
-                                                        )}
-
-                                                        {/* Send Email */}
-                                                        {hasPermission('send_emails') && (
-                                                            <IconButton
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                tooltipPosition="top"
-                                                                onClick={() => {
-                                                                    setSelectedApplicant(app);
-                                                                    setEmailForm({ subject: '', body: '' });
-                                                                    setEmailModalOpen(true);
-                                                                }}
-                                                                tooltip="إرسال رسالة بريد إلكتروني"
-                                                                icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                                            />
-                                                        )}
-
-                                                        {/* Delete Applicant */}
-                                                        {hasPermission('delete_applicants') && (
-                                                            <IconButton
-                                                                size="sm"
-                                                                variant="danger"
-                                                                tooltipPosition="top"
-                                                                onClick={() => confirmDeleteApplicant(app)}
-                                                                tooltip="حذف المتقدم نهائياً"
-                                                                icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                            />
-                                                        )}
-                                                    </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {loading ? (
+                                            <tr>
+                                                <td colSpan="6" className="py-12 text-center text-slate-400">
+                                                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                        ) : applicants.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="6" className="py-12 text-center text-slate-400">
+                                                    {t('noApplicantsYet')}
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            applicants.map(app => (
+                                                <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
+                                                    <td className="px-4 py-3 font-mono font-bold text-slate-800">
+                                                        #{app.application_no}
+                                                    </td>
 
-                        {/* Pagination Footer */}
-                        {lastPage > 1 && (
-                            <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                                    <td className="px-4 py-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => navigate(`#/applicants/${app.id}`)}
+                                                            className="font-bold text-slate-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1.5 cursor-pointer text-start"
+                                                        >
+                                                            <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                            </svg>
+                                                            <span>{app.full_name}</span>
+                                                        </button>
+                                                    </td>
+
+                                                    <td className="px-4 py-3 text-slate-600 font-medium">
+                                                        {app.position}
+                                                    </td>
+
+                                                    <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
+                                                        {new Date(app.created_at).toLocaleDateString('en-CA')}
+                                                    </td>
+
+                                                    <td className="px-4 py-3">
+                                                        {getStatusBadge(app.status)}
+                                                    </td>
+
+                                                    <td className="px-4 py-3 text-center">
+                                                        <div className="inline-flex items-center gap-1">
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                tooltipPosition="top"
+                                                                onClick={() => navigate(`#/applicants/${app.id}`)}
+                                                                tooltip={t('viewDetails')}
+                                                                icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                            />
+
+                                                            {hasPermission('promote_applicants') && (
+                                                                <IconButton
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    tooltipPosition="top"
+                                                                    onClick={() => openStatusModal(app)}
+                                                                    tooltip={t('changeStatus')}
+                                                                    icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                                                                />
+                                                            )}
+
+                                                            {hasPermission('schedule_interviews') && (
+                                                                <IconButton
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    tooltipPosition="top"
+                                                                    onClick={() => {
+                                                                        setSelectedApplicant(app);
+                                                                        setInterviewForm({
+                                                                            scheduled_at: '',
+                                                                            interview_type: 'online',
+                                                                            meeting_link: '',
+                                                                            location: '',
+                                                                            send_invitation_email: true,
+                                                                        });
+                                                                        setInterviewModalOpen(true);
+                                                                    }}
+                                                                    tooltip={t('scheduleInterview')}
+                                                                    icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                                                />
+                                                            )}
+
+                                                            {hasPermission('delete_applicants') && (
+                                                                <IconButton
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    tooltipPosition="top"
+                                                                    onClick={() => confirmDeleteApplicant(app)}
+                                                                    tooltip={t('delete')}
+                                                                    className="hover:text-rose-600 hover:bg-rose-50"
+                                                                    icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination Footer (Matches Reference Bottom Bar) */}
+                            <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                                 <div>
-                                    إجمالي {total} متقدم &bull; الصفحة {currentPage} من {lastPage}
+                                    {t('showingRecords')} <span className="font-bold text-slate-800">{applicants.length > 0 ? 1 : 0}</span> {t('toRecord')} <span className="font-bold text-slate-800">{applicants.length}</span> {t('ofTotal')} <span className="font-bold text-slate-800">{total}</span>
                                 </div>
-                                <div className="flex gap-1.5">
+                                <div className="flex items-center gap-1">
                                     <button
                                         disabled={currentPage <= 1}
                                         onClick={() => loadApplicants(currentPage - 1, activeStatus, search)}
-                                        className="px-3 py-1 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                                        className="w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
                                     >
-                                        السابق
+                                        ‹
                                     </button>
+                                    {Array.from({ length: Math.max(1, lastPage) }, (_, idx) => idx + 1).slice(0, 7).map(pageNum => (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => loadApplicants(pageNum, activeStatus, search)}
+                                            className={`w-7 h-7 rounded-md text-xs font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                                                currentPage === pageNum
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-slate-600 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    ))}
                                     <button
                                         disabled={currentPage >= lastPage}
                                         onClick={() => loadApplicants(currentPage + 1, activeStatus, search)}
-                                        className="px-3 py-1 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                                        className="w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
                                     >
-                                        التالي
+                                        ›
                                     </button>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                ) : (
-                    /* Kanban Board View (Pipeline stages visual representation) */
-                    <div className="overflow-x-auto pb-6 pt-2">
-                        <div className="flex gap-4 min-w-max pb-2">
-                            {kanbanStages.map(stage => {
-                                const stageApplicants = applicants.filter(a => a.status === stage);
-                                const titles = {
-                                    applicant: { label: t('status_applicant'), color: 'border-t-blue-500 bg-blue-50/30' },
-                                    participant: { label: t('status_participant'), color: 'border-t-indigo-500 bg-indigo-50/30' },
-                                    probation: { label: t('status_probation'), color: 'border-t-amber-500 bg-amber-50/30' },
-                                    accepted: { label: t('status_accepted'), color: 'border-t-emerald-500 bg-emerald-50/30' },
-                                    rejected: { label: t('status_rejected'), color: 'border-t-rose-500 bg-rose-50/30' },
-                                };
-
-                                return (
-                                    <div
-                                        key={stage}
-                                        className={`bg-white rounded-2xl border border-slate-200 border-t-4 ${titles[stage]?.color || ''} p-3.5 flex flex-col w-[300px] shrink-0 shadow-xs`}
-                                    >
-                                        <div className="flex items-center justify-between mb-3 px-1">
-                                            <h4 className="font-bold text-xs text-slate-800">
-                                                {titles[stage]?.label}
-                                            </h4>
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
-                                                {stageApplicants.length}
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[620px] pr-1">
-                                            {stageApplicants.length === 0 ? (
-                                                <div className="py-8 text-center text-xs text-slate-300">
-                                                    فارغ
-                                                </div>
-                                            ) : (
-                                                stageApplicants.map(app => (
-                                                    <div
-                                                        key={app.id}
-                                                        className="bg-white rounded-xl p-3.5 border border-slate-200 hover:border-indigo-300 hover:shadow-xs transition-all cursor-pointer space-y-2"
-                                                        onClick={() => navigate(`#/applicants/${app.id}`)}
-                                                    >
-                                                        <div className="flex items-start justify-between gap-2">
-                                                            <div className="font-bold text-xs text-slate-800 leading-tight">
-                                                                {app.full_name}
-                                                            </div>
-                                                            {app.rating > 0 && (
-                                                                <span className="text-[10px] font-bold text-amber-600 shrink-0">
-                                                                    ★ {app.rating}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 truncate">
-                                                            {app.position}
-                                                        </div>
-                                                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] text-slate-400">
-                                                            <span className="truncate max-w-[130px]">{app.city || app.country || 'غير محدد'}</span>
-                                                            <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-                                                                {hasPermission('promote_applicants') && (
-                                                                    <IconButton
-                                                                        size="sm"
-                                                                        variant="warning"
-                                                                        tooltipPosition="top"
-                                                                        onClick={() => openStatusModal(app)}
-                                                                        tooltip="ترقية وتغيير الحالة"
-                                                                        icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                                                                    />
-                                                                )}
-                                                                {hasPermission('delete_applicants') && (
-                                                                    <IconButton
-                                                                        size="sm"
-                                                                        variant="danger"
-                                                                        tooltipPosition="top"
-                                                                        onClick={() => confirmDeleteApplicant(app)}
-                                                                        tooltip="حذف المتقدم"
-                                                                        icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                                    />
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        /* Kanban Board View */
+                        <div className="p-4 overflow-x-auto">
+                            <div className="flex gap-3.5 min-w-max pb-2">
+                                {kanbanStages.map(stage => {
+                                    const stageApplicants = applicants.filter(a => a.status === stage);
+                                    const titles = {
+                                        applicant: { label: t('status_applicant'), color: 'border-t-blue-600' },
+                                        participant: { label: t('status_participant'), color: 'border-t-blue-500' },
+                                        probation: { label: t('status_probation'), color: 'border-t-amber-500' },
+                                        accepted: { label: t('status_accepted'), color: 'border-t-emerald-500' },
+                                        rejected: { label: t('status_rejected'), color: 'border-t-rose-500' },
+                                    };
+
+                                    return (
+                                        <div
+                                            key={stage}
+                                            className={`bg-slate-50/70 rounded-lg border border-slate-200 border-t-4 ${titles[stage]?.color || ''} p-3 flex flex-col w-[280px] shrink-0`}
+                                        >
+                                            <div className="flex items-center justify-between mb-3 px-1">
+                                                <h4 className="font-bold text-xs text-slate-800">
+                                                    {titles[stage]?.label}
+                                                </h4>
+                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white border border-slate-200 text-slate-600">
+                                                    {stageApplicants.length}
+                                                </span>
+                                            </div>
+
+                                            <div className="space-y-2 flex-1 overflow-y-auto max-h-[560px]">
+                                                {stageApplicants.length === 0 ? (
+                                                    <div className="py-8 text-center text-xs text-slate-400">
+                                                        —
+                                                    </div>
+                                                ) : (
+                                                    stageApplicants.map(app => (
+                                                        <div
+                                                            key={app.id}
+                                                            className="bg-white rounded-lg p-3 border border-slate-200 hover:border-blue-300 transition-all cursor-pointer space-y-1.5"
+                                                            onClick={() => navigate(`#/applicants/${app.id}`)}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <div className="font-bold text-xs text-slate-800 leading-tight">
+                                                                    {app.full_name}
+                                                                </div>
+                                                                {app.rating > 0 && (
+                                                                    <span className="text-[10px] font-bold text-amber-600 shrink-0">
+                                                                        ★ {app.rating}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-[11px] text-slate-500 truncate">
+                                                                {app.position}
+                                                            </div>
+                                                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] text-slate-400">
+                                                                <span className="font-mono">#{app.application_no}</span>
+                                                                <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                                                                    {hasPermission('promote_applicants') && (
+                                                                        <IconButton
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            tooltipPosition="top"
+                                                                            onClick={() => openStatusModal(app)}
+                                                                            tooltip={t('changeStatus')}
+                                                                            icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                                                                        />
+                                                                    )}
+                                                                    {hasPermission('delete_applicants') && (
+                                                                        <IconButton
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            tooltipPosition="top"
+                                                                            onClick={() => confirmDeleteApplicant(app)}
+                                                                            tooltip={t('delete')}
+                                                                            className="hover:text-rose-600"
+                                                                            icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Modal: Change Status & Promote */}
@@ -662,7 +692,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 <select
                                     value={toStatus}
                                     onChange={e => setToStatus(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                 >
                                     <option value="applicant">{t('status_applicant')} (متقدم جديد)</option>
                                     <option value="participant">{t('status_participant')} (مشارك في الفرز والمقابلات)</option>
@@ -706,7 +736,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                     id="sendEmail"
                                     checked={sendEmailNotification}
                                     onChange={e => setSendEmailNotification(e.target.checked)}
-                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                                 />
                                 <label htmlFor="sendEmail" className="text-xs text-slate-700 cursor-pointer">
                                     {t('notifyApplicantByEmail')}
@@ -724,7 +754,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 <button
                                     type="submit"
                                     disabled={updatingStatus}
-                                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 disabled:opacity-50"
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 disabled:opacity-50"
                                 >
                                     {updatingStatus ? 'جاري الحفظ...' : t('save')}
                                 </button>
@@ -837,7 +867,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100"
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100"
                                 >
                                     {t('save')}
                                 </button>
@@ -917,7 +947,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                     id="sendInvitation"
                                     checked={interviewForm.send_invitation_email}
                                     onChange={e => setInterviewForm({ ...interviewForm, send_invitation_email: e.target.checked })}
-                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                                 />
                                 <label htmlFor="sendInvitation" className="text-xs text-slate-700 cursor-pointer">
                                     إرسال بريد إلكتروني تلقائي للمتقدم برابط وموعد المقابلة
@@ -934,7 +964,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100"
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100"
                                 >
                                     تأكيد الجدولة
                                 </button>
@@ -1005,7 +1035,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100"
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100"
                                 >
                                     {t('sendEmail')}
                                 </button>
@@ -1021,7 +1051,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                     <div className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-lg border border-indigo-100">
+                                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center font-black text-lg border border-blue-100">
                                     {selectedApplicant.full_name?.charAt(0) || 'A'}
                                 </div>
                                 <div>
@@ -1079,7 +1109,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 <h4 className="text-xs font-bold text-slate-700 mb-2">{t('skills')}</h4>
                                 <div className="flex flex-wrap gap-1.5">
                                     {selectedApplicant.skills.map((s, i) => (
-                                        <span key={i} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-100">
+                                        <span key={i} className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100">
                                             {s}
                                         </span>
                                     ))}
@@ -1094,7 +1124,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                     href={selectedApplicant.portfolio_url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-indigo-600 hover:bg-slate-50 flex items-center gap-1"
+                                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-blue-600 hover:bg-slate-50 flex items-center gap-1"
                                 >
                                     🌐 معرض الأعمال
                                 </a>
@@ -1132,10 +1162,10 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                         {/* Status Transition History (مسار الترقية والحالة) */}
                         <div className="mb-6">
                             <h4 className="text-xs font-bold text-slate-800 mb-3">سجل وتاريخ الترقيات وتغيير الحالة:</h4>
-                            <div className="border-s-2 border-indigo-200 ms-3 ps-4 space-y-4 text-xs">
+                            <div className="border-s-2 border-blue-200 ms-3 ps-4 space-y-4 text-xs">
                                 {selectedApplicant.status_logs?.map((log, idx) => (
                                     <div key={idx} className="relative">
-                                        <div className="absolute -start-[23px] top-1 w-3 h-3 rounded-full bg-indigo-600 border-2 border-white"></div>
+                                        <div className="absolute -start-[23px] top-1 w-3 h-3 rounded-full bg-blue-600 border-2 border-white"></div>
                                         <p className="font-bold text-slate-800">
                                             {log.notes || `تم التحويل إلى ${t(`status_${log.to_status}`)}`}
                                         </p>
@@ -1162,7 +1192,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 {hasPermission('promote_applicants') && (
                                     <button
                                         onClick={() => openStatusModal(selectedApplicant)}
-                                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100"
+                                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100"
                                     >
                                         ترقية وتغيير المرحلة
                                     </button>

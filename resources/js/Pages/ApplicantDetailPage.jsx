@@ -228,13 +228,16 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     };
 
     const startReplaceAttachment = (att) => {
+        setActiveTab('resume');
         setCvMode('replace');
         setReplaceTargetId(att?.id || null);
         setCvNotes(att?.notes || '');
-        if (fileInputRef.current) {
-            fileInputRef.current.focus();
-            fileInputRef.current.click();
-        }
+        setTimeout(() => {
+            if (fileInputRef.current) {
+                fileInputRef.current.focus();
+                fileInputRef.current.click();
+            }
+        }, 50);
     };
 
     const formatBytes = (bytes) => {
@@ -496,7 +499,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         return (
             <AppLayout currentRoute={currentRoute} navigate={navigate}>
                 <div className="py-24 text-center text-slate-400">
-                    <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                     <p className="text-xs font-bold text-slate-500">جاري تحميل الملف الشامل للمتقدم...</p>
                 </div>
             </AppLayout>
@@ -508,7 +511,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const getStatusBadge = (status) => {
         const styles = {
             applicant: 'bg-blue-50 text-blue-700 border-blue-200',
-            participant: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+            participant: 'bg-blue-50 text-blue-700 border-blue-200',
             probation: 'bg-amber-50 text-amber-700 border-amber-200',
             accepted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
             rejected: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -591,78 +594,117 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                     )}
                 </PageHeader>
 
-                {/* Applicant Summary Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-500 text-white font-black text-2xl flex items-center justify-center shadow-md shadow-indigo-100 shrink-0">
-                            {applicant.full_name?.charAt(0) || 'A'}
-                        </div>
+                {/* 4 KPI Summary Cards (Matches Reference Layout Scheme ADR-005) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
                         <div>
-                            <h3 className="text-base font-black text-slate-800">
-                                {applicant.full_name}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
-                                <span>📧 {applicant.email}</span>
-                                <span>📞 {applicant.phone}</span>
-                                <span>📍 {applicant.city ? `${applicant.city}، ` : ''}{applicant.country}</span>
-                                {applicant.age && <span>🎂 {applicant.age}</span>}
+                            <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
                             </div>
+                            <p className="text-xs text-slate-500 font-semibold mt-1.5">{t('experienceYears')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">
+                            {applicant.experience_years ?? 0}
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
+                        <div>
+                            <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold mt-1.5">{t('tab_files')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">
+                            {applicant.attachments?.length || (applicant.resume_path ? 1 : 0)}
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
+                        <div>
+                            <div className="w-7 h-7 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold mt-1.5">{t('tab_interviews')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">
+                            {applicant.interviews?.length || 0}
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
+                        <div>
+                            <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs text-slate-500 font-semibold mt-1.5">{t('overallScore')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">
+                            {applicant.rating || 0}<span className="text-xs text-slate-400 font-normal">/5</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Smooth Tabs Navigation */}
-                <div className="bg-slate-100 p-1.5 rounded-2xl border border-slate-200 flex items-center gap-1 overflow-x-auto scrollbar-none">
+                {/* Concise Tabs Bar (Matches Reference Filter Pills Style) */}
+                <div className="bg-white p-2 rounded-lg border border-slate-200 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
                     {[
-                        { id: 'overview', label: t('tab_overview'), icon: '👤' },
-                        { id: 'social', label: `${t('tab_social')} (${socialLinks.length})`, icon: '🌐' },
-                        { id: 'portfolio', label: `${t('tab_portfolio')} (${portfolioItems.length})`, icon: '🎨' },
-                        { id: 'resume', label: `${t('tab_resume')} (${applicant.attachments?.length || (applicant.resume_path ? 1 : 0)})`, icon: '📄' },
-                        { id: 'interviews', label: `${t('tab_interviews')} (${applicant.interviews?.length || 0})`, icon: '🎯' },
-                        { id: 'emails', label: `${t('tab_emails')} (${applicant.email_logs?.length || 0})`, icon: '✉️' },
-                        { id: 'timeline', label: t('tab_timeline'), icon: '⏳' },
+                        { id: 'overview', label: t('tab_overview') },
+                        { id: 'resume', label: 'CV' },
+                        { id: 'files', label: `${t('tab_files')} (${applicant.attachments?.length || (applicant.resume_path ? 1 : 0)})` },
+                        { id: 'social', label: `${t('tab_social')} (${socialLinks.length})` },
+                        { id: 'portfolio', label: `${t('tab_portfolio')} (${portfolioItems.length})` },
+                        { id: 'interviews', label: `${t('tab_interviews')} (${applicant.interviews?.length || 0})` },
+                        { id: 'emails', label: `${t('tab_emails')} (${applicant.email_logs?.length || 0})` },
+                        { id: 'timeline', label: t('tab_timeline') },
                     ].map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                            className={`px-3.5 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
                                 activeTab === tab.id
-                                    ? 'bg-white text-indigo-700 shadow-sm'
-                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
                             }`}
                         >
-                            <span>{tab.icon}</span>
-                            <span>{tab.label}</span>
+                            {tab.label}
                         </button>
                     ))}
                 </div>
 
-                {/* Tab 1: Overview & Personal Details (العمر، المحافظة، العنوان...) */}
+                {/* Tab 1: Overview & Personal Details */}
                 {activeTab === 'overview' && (
-                    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+                    <div className="bg-white rounded-lg border border-slate-200 p-5 sm:p-6 shadow-2xs">
+                        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
                             <div>
-                                <h3 className="font-black text-sm text-slate-800">
-                                    البيانات الشخصية والوظيفية المفصلة
+                                <h3 className="font-bold text-sm text-slate-900">
+                                    {t('tab_overview')}
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    استعراض وتعديل كافة المعلومات الشخصية والمهنية للمتقدم.
+                                    {applicant.full_name} &bull; {applicant.email} &bull; {applicant.phone}
                                 </p>
                             </div>
                             <button
                                 onClick={handleSavePersonalInfo}
                                 disabled={savingPersonal}
-                                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-100 disabled:opacity-50"
+                                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                             >
-                                {savingPersonal ? 'جاري الحفظ...' : '💾 حفظ التعديلات'}
+                                {savingPersonal ? t('saving') : t('save')}
                             </button>
                         </div>
 
                         <form onSubmit={handleSavePersonalInfo} className="space-y-6">
                             {/* Personal Details Section */}
                             <div>
-                                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">
-                                    1. المعلومات الشخصية (Personal Info)
+                                <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-3">
+                                    1. {t('tab_overview')}
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div>
@@ -671,19 +713,19 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             type="text"
                                             value={personalForm.full_name}
                                             onChange={e => setPersonalForm({ ...personalForm, full_name: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500/20"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">العمر (سنوات)</label>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">العمر</label>
                                         <input
                                             type="number"
                                             min="15"
                                             max="90"
                                             value={personalForm.age}
                                             onChange={e => setPersonalForm({ ...personalForm, age: e.target.value })}
-                                            placeholder="مثلاً: 27"
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                            placeholder="27"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono"
                                         />
                                     </div>
                                     <div>
@@ -692,7 +734,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             type="date"
                                             value={personalForm.birth_date}
                                             onChange={e => setPersonalForm({ ...personalForm, birth_date: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono"
                                         />
                                     </div>
                                     <div>
@@ -700,7 +742,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         <select
                                             value={personalForm.gender}
                                             onChange={e => setPersonalForm({ ...personalForm, gender: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
                                         >
                                             <option value="ذكر">ذكر (Male)</option>
                                             <option value="أنثى">أنثى (Female)</option>
@@ -712,7 +754,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             type="text"
                                             value={personalForm.national_id}
                                             onChange={e => setPersonalForm({ ...personalForm, national_id: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono"
                                         />
                                     </div>
                                     <div>
@@ -720,7 +762,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         <select
                                             value={personalForm.marital_status}
                                             onChange={e => setPersonalForm({ ...personalForm, marital_status: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
                                         >
                                             <option value="أعزب">أعزب / عزباء</option>
                                             <option value="متزوج">متزوج / متزوجة</option>
@@ -732,8 +774,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
                             {/* Location & Contact Section */}
                             <div className="pt-4 border-t border-slate-100">
-                                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">
-                                    2. الموقع والعناوين والتواصل (Location & Contact)
+                                <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-3">
+                                    2. التواصل والعنوان
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                                     <div>
@@ -742,7 +784,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             type="email"
                                             value={personalForm.email}
                                             onChange={e => setPersonalForm({ ...personalForm, email: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono"
                                         />
                                     </div>
                                     <div>
@@ -751,7 +793,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             type="text"
                                             value={personalForm.phone}
                                             onChange={e => setPersonalForm({ ...personalForm, phone: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono"
                                         />
                                     </div>
                                     <div>
@@ -760,28 +802,25 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             type="text"
                                             value={personalForm.country}
                                             onChange={e => setPersonalForm({ ...personalForm, country: e.target.value })}
-                                            placeholder="مصر، السعودية..."
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">المحافظة / الإمارة</label>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">المحافظة</label>
                                         <input
                                             type="text"
                                             value={personalForm.governorate}
                                             onChange={e => setPersonalForm({ ...personalForm, governorate: e.target.value })}
-                                            placeholder="الجيزة، الدقهلية، الرياض..."
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
                                         />
                                     </div>
                                     <div className="sm:col-span-4">
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">العنوان التفصيلي والسكن</label>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">العنوان</label>
                                         <input
                                             type="text"
                                             value={personalForm.address}
                                             onChange={e => setPersonalForm({ ...personalForm, address: e.target.value })}
-                                            placeholder="الشارع، الحي، المعلم القريب..."
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
                                         />
                                     </div>
                                 </div>
@@ -789,8 +828,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
                             {/* Professional & Skills Section */}
                             <div className="pt-4 border-t border-slate-100">
-                                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">
-                                    3. المؤهل والتخصص والمهارات (Professional Details)
+                                <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-3">
+                                    3. المؤهل والمهارات
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                     <div>
@@ -799,7 +838,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             type="text"
                                             value={personalForm.position}
                                             onChange={e => setPersonalForm({ ...personalForm, position: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-800"
                                         />
                                     </div>
                                     <div>
@@ -809,7 +848,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             min="0"
                                             value={personalForm.experience_years}
                                             onChange={e => setPersonalForm({ ...personalForm, experience_years: parseInt(e.target.value) || 0 })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono"
                                         />
                                     </div>
                                     <div>
@@ -818,7 +857,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             type="text"
                                             value={personalForm.education_level}
                                             onChange={e => setPersonalForm({ ...personalForm, education_level: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
                                         />
                                     </div>
                                 </div>
@@ -832,28 +871,28 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             value={newSkill}
                                             onChange={e => setNewSkill(e.target.value)}
                                             onKeyDown={handleAddSkill}
-                                            placeholder="أضف مهارة جديدة (مثلاً: React, Docker, UI/UX)..."
-                                            className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                                            placeholder="React, Laravel, UI/UX..."
+                                            className="flex-1 px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
                                         />
                                         <button
                                             type="button"
                                             onClick={handleAddSkill}
-                                            className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold"
+                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold cursor-pointer"
                                         >
-                                            إضافة
+                                            +
                                         </button>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
                                         {skillsList.map((skill, idx) => (
                                             <span
                                                 key={idx}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100"
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200"
                                             >
                                                 <span>{skill}</span>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRemoveSkill(skill)}
-                                                    className="text-indigo-400 hover:text-indigo-800 font-bold"
+                                                    className="text-blue-400 hover:text-blue-800 font-bold"
                                                 >
                                                     &times;
                                                 </button>
@@ -871,8 +910,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         rows={4}
                                         value={personalForm.cover_letter}
                                         onChange={e => setPersonalForm({ ...personalForm, cover_letter: e.target.value })}
-                                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs leading-relaxed"
-                                    ></textarea>
+                                        className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs leading-relaxed"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">{t('internalNotes')}</label>
@@ -880,16 +919,15 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         rows={4}
                                         value={personalForm.internal_notes}
                                         onChange={e => setPersonalForm({ ...personalForm, internal_notes: e.target.value })}
-                                        placeholder="ملاحظات سرية للإدارة وفريق الفرز..."
-                                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs leading-relaxed bg-amber-50/20"
-                                    ></textarea>
+                                        className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs leading-relaxed bg-slate-50/50"
+                                    />
                                 </div>
                             </div>
                         </form>
                     </div>
                 )}
 
-                {/* Tab 2: Resume (CV) & Attachments Version Control */}
+                {/* Tab 2: CV (Active CV + Ordered Upload Form ONLY — No server path, no bottom files list per ADR-007) */}
                 {activeTab === 'resume' && (() => {
                     const attachmentsList = Array.isArray(applicant.attachments) && applicant.attachments.length > 0
                         ? [...applicant.attachments].sort((a, b) => (b.version || 0) - (a.version || 0))
@@ -906,302 +944,319 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                             file_exists: true,
                         }] : []);
                     const currentAtt = attachmentsList.find(a => a.is_current) || attachmentsList[0] || null;
-                    const replaceTargetAtt = replaceTargetId ? attachmentsList.find(a => a.id === replaceTargetId) : currentAtt;
 
                     return (
-                        <div className="space-y-6">
-                            {/* Top Card: Upload New Version or Replace File */}
-                            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
-                                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-6">
-                                    <div>
-                                        <h3 className="font-black text-sm text-slate-800">
-                                            {t('cvSectionTitle')}
-                                        </h3>
-                                        <p className="text-xs text-slate-500 mt-0.5">
-                                            {t('cvSectionSubtitle')}
-                                        </p>
-                                    </div>
+                        <div className="bg-white rounded-lg border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-5">
+                            <div className="flex flex-wrap items-center justify-between gap-4 pb-3.5 border-b border-slate-100">
+                                <div>
+                                    <h3 className="font-bold text-sm text-slate-900">
+                                        {t('cvSectionTitle')}
+                                    </h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        {t('cvSectionSubtitle')}
+                                    </p>
                                 </div>
+                                {attachmentsList.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('files')}
+                                        className="px-3 py-1.5 rounded-md border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors cursor-pointer"
+                                    >
+                                        {t('tab_files')} ({attachmentsList.length})
+                                    </button>
+                                )}
+                            </div>
 
-                                {/* Active CV Banner */}
-                                {currentAtt ? (
-                                    <div className={`p-5 rounded-2xl border flex flex-wrap items-center justify-between gap-4 mb-6 ${
-                                        currentAtt.file_exists === false
-                                            ? 'bg-amber-50/70 border-amber-200'
-                                            : 'bg-emerald-50/70 border-emerald-200'
-                                    }`}>
-                                        <div className="flex items-center gap-3.5 min-w-0">
-                                            <div className={`w-12 h-12 rounded-xl text-white font-bold flex items-center justify-center text-xl shadow-xs shrink-0 ${
-                                                currentAtt.file_exists === false ? 'bg-amber-500' : 'bg-emerald-600'
-                                            }`}>
-                                                📄
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">
-                                                        v{currentAtt.version || 1} • {t('activeCvBadge')}
+                            {/* Active CV Status Banner (Without any server path exposure) */}
+                            {currentAtt ? (
+                                <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 text-blue-600 font-bold flex items-center justify-center shrink-0">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-bold">
+                                                    v{currentAtt.version || 1} &bull; {t('activeCvBadge')}
+                                                </span>
+                                                <span className="font-bold text-xs text-slate-900 truncate">
+                                                    {currentAtt.original_name || currentAtt.filename}
+                                                </span>
+                                                {currentAtt.size > 0 && (
+                                                    <span className="text-[11px] text-slate-400 font-mono">
+                                                        ({formatBytes(currentAtt.size)})
                                                     </span>
-                                                    <p className="font-bold text-xs text-slate-900 truncate">
-                                                        {currentAtt.original_name || currentAtt.filename}
-                                                    </p>
-                                                    {currentAtt.size > 0 && (
-                                                        <span className="text-[11px] text-slate-500 font-mono">
-                                                            ({formatBytes(currentAtt.size)})
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[11px] text-slate-500 font-mono mt-1 truncate">
-                                                    {currentAtt.path}
-                                                </p>
-                                                {currentAtt.file_exists === false && (
-                                                    <p className="text-[11px] text-amber-800 font-bold mt-1">
-                                                        ⚠️ {t('fileMissingWarning')}
-                                                    </p>
                                                 )}
                                             </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            <IconButton
-                                                variant="active"
-                                                href={`${currentAtt.path}?name=${encodeURIComponent(currentAtt.original_name || currentAtt.filename || 'cv.pdf')}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                tooltip={t('previewFile')}
-                                                icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                            />
-                                            <IconButton
-                                                variant="success"
-                                                href={`${currentAtt.path}?download=1&name=${encodeURIComponent(currentAtt.original_name || currentAtt.filename || 'cv.pdf')}`}
-                                                tooltip={t('downloadFile')}
-                                                icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                            />
-                                            <IconButton
-                                                variant="warning"
-                                                onClick={() => startReplaceAttachment(currentAtt)}
-                                                tooltip={t('replaceThisFile')}
-                                                icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                            />
-                                            <IconButton
-                                                variant="danger"
-                                                disabled={deletingAttId === currentAtt.id}
-                                                onClick={() => handleDeleteAttachment(currentAtt.id)}
-                                                tooltip={t('deleteAttachment')}
-                                                icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="p-5 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center mb-6 text-xs text-slate-500">
-                                        {t('noAttachmentsFound')}
-                                    </div>
-                                )}
-
-                                {/* Upload / Replace Form */}
-                                <form onSubmit={handleUploadCv} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                                {t('uploadModeLabel')}
-                                            </label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setCvMode('new_version');
-                                                        setReplaceTargetId(null);
-                                                    }}
-                                                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center ${
-                                                        cvMode === 'new_version'
-                                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                                                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                                    }`}
-                                                >
-                                                    ➕ {t('uploadModeNewVersion')}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    disabled={attachmentsList.length === 0}
-                                                    onClick={() => {
-                                                        setCvMode('replace');
-                                                        if (!replaceTargetId && currentAtt) {
-                                                            setReplaceTargetId(currentAtt.id);
-                                                        }
-                                                    }}
-                                                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center disabled:opacity-40 ${
-                                                        cvMode === 'replace'
-                                                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                                                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                                    }`}
-                                                >
-                                                    🔄 {t('uploadModeReplace')}
-                                                    {cvMode === 'replace' && replaceTargetAtt ? ` (v${replaceTargetAtt.version || 1})` : ''}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                                {t('attachmentNotesLabel')}
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={cvNotes}
-                                                onChange={e => setCvNotes(e.target.value)}
-                                                placeholder={t('attachmentNotesPlaceholder')}
-                                                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs"
-                                            />
+                                            {currentAtt.notes && (
+                                                <p className="text-xs text-slate-500 mt-1 truncate">
+                                                    {currentAtt.notes}
+                                                </p>
+                                            )}
+                                            {currentAtt.file_exists === false && (
+                                                <p className="text-[11px] text-amber-700 font-semibold mt-1">
+                                                    {t('fileMissingWarning')}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-2">
-                                        <div className="flex-1">
-                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                                {t('selectCvFileLabel')}
-                                            </label>
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept=".pdf,.doc,.docx"
-                                                onChange={e => setCvFile(e.target.files[0] || null)}
-                                                className="w-full text-xs text-slate-600 bg-white rounded-xl border border-slate-200 p-1.5 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
-                                            />
-                                        </div>
-
-                                        <button
-                                            type="submit"
-                                            disabled={uploadingCv || !cvFile}
-                                            className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md disabled:opacity-50 transition-all flex items-center gap-2 shrink-0 ${
-                                                cvMode === 'replace'
-                                                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-100'
-                                                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100'
-                                            }`}
-                                        >
-                                            {uploadingCv
-                                                ? t('uploadingFile')
-                                                : cvMode === 'replace'
-                                                ? `🔄 ${t('replaceCurrentFileBtn')}`
-                                                : `⬆️ ${t('uploadNewVersionBtn')}`}
-                                        </button>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <IconButton
+                                            href={`${currentAtt.path}?name=${encodeURIComponent(currentAtt.original_name || currentAtt.filename || 'cv.pdf')}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            tooltip={t('previewFile')}
+                                            icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                        />
+                                        <IconButton
+                                            href={`${currentAtt.path}?download=1&name=${encodeURIComponent(currentAtt.original_name || currentAtt.filename || 'cv.pdf')}`}
+                                            tooltip={t('downloadFile')}
+                                            icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                        />
                                     </div>
-                                </form>
-                            </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 rounded-lg bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-500">
+                                    {t('noAttachmentsFound')}
+                                </div>
+                            )}
 
-                            {/* Bottom Card: Attachments & Versions History List */}
-                            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
-                                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-                                    <h4 className="font-black text-sm text-slate-800">
-                                        {t('attachmentsHistoryTitle')} ({attachmentsList.length})
-                                    </h4>
+                            {/* Upload Form Ordered Strictly per ADR-007:
+                                1. File Input -> 2. Description Input -> 3. Radio (Replace / New Version) -> 4. Save Button */}
+                            <form onSubmit={handleUploadCv} className="p-4 sm:p-5 rounded-lg border border-slate-200 bg-white space-y-4">
+                                {/* 1. File Input */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                        1. {t('fileFieldLabel')}
+                                    </label>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".pdf,.doc,.docx"
+                                        onChange={e => setCvFile(e.target.files[0] || null)}
+                                        className="w-full text-xs text-slate-600 bg-slate-50 rounded-lg border border-slate-200 p-1.5 file:me-3 file:py-1.5 file:px-3.5 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                                    />
                                 </div>
 
-                                {attachmentsList.length === 0 ? (
-                                    <p className="py-8 text-center text-xs text-slate-400">
-                                        {t('noAttachmentsFound')}
-                                    </p>
-                                ) : (
-                                    <div className="divide-y divide-slate-100">
-                                        {attachmentsList.map(att => (
-                                            <div
-                                                key={att.id || att.version}
-                                                className={`py-4 px-3 rounded-2xl flex flex-wrap items-center justify-between gap-4 transition-colors ${
-                                                    att.is_current ? 'bg-indigo-50/40' : 'hover:bg-slate-50'
-                                                }`}
-                                            >
-                                                <div className="flex items-start gap-3 min-w-0">
-                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-black font-mono shrink-0 ${
-                                                        att.is_current
-                                                            ? 'bg-indigo-600 text-white'
-                                                            : 'bg-slate-200 text-slate-700'
-                                                    }`}>
-                                                        v{att.version || 1}
-                                                    </span>
-                                                    <div className="min-w-0">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className="font-bold text-xs text-slate-800 truncate">
-                                                                {att.original_name || att.filename}
-                                                            </span>
-                                                            {att.is_current && (
-                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                                                                    {t('activeCvBadge')}
-                                                                </span>
-                                                            )}
-                                                            {att.file_exists === false && (
-                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                                                                    ⚠️ {t('fileMissingWarning')}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex flex-wrap items-center gap-3 mt-1 text-[11px] text-slate-500">
-                                                            {att.size > 0 && <span className="font-mono">{formatBytes(att.size)}</span>}
-                                                            {att.uploaded_at && (
-                                                                <span>
-                                                                    🕒 {new Date(att.uploaded_at).toLocaleString(isRtl ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                                                                </span>
-                                                            )}
-                                                            {att.uploaded_by && <span>👤 {att.uploaded_by}</span>}
-                                                            {att.notes && <span className="text-slate-600 font-medium">📝 {att.notes}</span>}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                {/* 2. Description Input */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                        2. {t('fileDescriptionLabel')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={cvNotes}
+                                        onChange={e => setCvNotes(e.target.value)}
+                                        placeholder={t('fileDescriptionPlaceholder')}
+                                        className="w-full px-3.5 py-2 rounded-lg border border-slate-200 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                    />
+                                </div>
 
-                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                    {/* Preview */}
-                                                    <IconButton
-                                                        size="sm"
-                                                        variant="active"
-                                                        href={`${att.path}?name=${encodeURIComponent(att.original_name || att.filename || 'cv.pdf')}`}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        tooltip={t('previewFile')}
-                                                        icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                                    />
+                                {/* 3. Radio Input for Upload Type (Replace vs New Version) */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                        3. {t('uploadTypeLabel')}
+                                    </label>
+                                    <div className="flex flex-wrap items-center gap-6 pt-1">
+                                        <label className={`inline-flex items-center gap-2 text-xs font-semibold cursor-pointer ${attachmentsList.length === 0 ? 'opacity-40 pointer-events-none' : 'text-slate-700'}`}>
+                                            <input
+                                                type="radio"
+                                                name="cvUploadMode"
+                                                value="replace"
+                                                checked={cvMode === 'replace'}
+                                                disabled={attachmentsList.length === 0}
+                                                onChange={() => {
+                                                    setCvMode('replace');
+                                                    if (!replaceTargetId && currentAtt) {
+                                                        setReplaceTargetId(currentAtt.id);
+                                                    }
+                                                }}
+                                                className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                                            />
+                                            <span>{t('uploadModeReplace')}</span>
+                                        </label>
 
-                                                    {/* Download */}
-                                                    <IconButton
-                                                        size="sm"
-                                                        variant="success"
-                                                        href={`${att.path}?download=1&name=${encodeURIComponent(att.original_name || att.filename || 'cv.pdf')}`}
-                                                        tooltip={t('downloadFile')}
-                                                        icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                                    />
-
-                                                    {/* Set as Active (if not current) */}
-                                                    {!att.is_current && (
-                                                        <IconButton
-                                                            size="sm"
-                                                            variant="secondary"
-                                                            disabled={activatingAttId === att.id}
-                                                            onClick={() => handleActivateAttachment(att.id)}
-                                                            tooltip={t('setAsActiveCv')}
-                                                            icon="M5 13l4 4L19 7"
-                                                        />
-                                                    )}
-
-                                                    {/* Replace this record */}
-                                                    <IconButton
-                                                        size="sm"
-                                                        variant="warning"
-                                                        onClick={() => startReplaceAttachment(att)}
-                                                        tooltip={t('replaceThisFile')}
-                                                        icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                                    />
-
-                                                    {/* Delete this record */}
-                                                    <IconButton
-                                                        size="sm"
-                                                        variant="danger"
-                                                        disabled={deletingAttId === att.id}
-                                                        onClick={() => handleDeleteAttachment(att.id)}
-                                                        tooltip={t('deleteAttachment')}
-                                                        icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
+                                        <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="cvUploadMode"
+                                                value="new_version"
+                                                checked={cvMode === 'new_version'}
+                                                onChange={() => {
+                                                    setCvMode('new_version');
+                                                    setReplaceTargetId(null);
+                                                }}
+                                                className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                                            />
+                                            <span>{t('uploadModeNewVersion')}</span>
+                                        </label>
                                     </div>
-                                )}
+                                </div>
+
+                                {/* 4. Save Button */}
+                                <div className="pt-2 flex justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={uploadingCv || !cvFile}
+                                        className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-2xs disabled:opacity-50 transition-all cursor-pointer"
+                                    >
+                                        {uploadingCv ? t('uploadingFile') : t('saveFileBtn')}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    );
+                })()}
+
+                {/* Tab 3: Files (ملفات) — Dedicated Tab for All Uploaded Files & Versions per ADR-007 */}
+                {activeTab === 'files' && (() => {
+                    const attachmentsList = Array.isArray(applicant.attachments) && applicant.attachments.length > 0
+                        ? [...applicant.attachments].sort((a, b) => (b.version || 0) - (a.version || 0))
+                        : (applicant.resume_path ? [{
+                            id: 'att_legacy',
+                            version: 1,
+                            filename: applicant.resume_path.split('/').pop(),
+                            original_name: applicant.resume_path.split('/').pop(),
+                            path: applicant.resume_path,
+                            size: 0,
+                            notes: 'النسخة الأساسية',
+                            uploaded_at: applicant.updated_at || applicant.created_at,
+                            is_current: true,
+                            file_exists: true,
+                        }] : []);
+
+                    return (
+                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs">
+                            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="font-bold text-sm text-slate-900">
+                                        {t('filesTabTitle')} ({attachmentsList.length})
+                                    </h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        {t('filesTabSubtitle')}
+                                    </p>
+                                </div>
+                                <IconButton
+                                    variant="primary"
+                                    onClick={() => {
+                                        setCvMode('new_version');
+                                        setReplaceTargetId(null);
+                                        setActiveTab('resume');
+                                    }}
+                                    tooltip={t('uploadCvTooltip')}
+                                    icon="M12 4v16m8-8H4"
+                                />
                             </div>
+
+                            {attachmentsList.length === 0 ? (
+                                <div className="py-12 text-center text-xs text-slate-400">
+                                    {t('noAttachmentsFound')}
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-start text-xs text-slate-700">
+                                        <thead className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-bold text-slate-500">
+                                            <tr>
+                                                <th className="px-4 py-3 text-start"># {t('versionCol')}</th>
+                                                <th className="px-4 py-3 text-start">{t('fileNameCol')}</th>
+                                                <th className="px-4 py-3 text-start">{t('descriptionCol')}</th>
+                                                <th className="px-4 py-3 text-start">{t('sizeCol')}</th>
+                                                <th className="px-4 py-3 text-start">{t('dateCol')}</th>
+                                                <th className="px-4 py-3 text-start">{t('statusCol')}</th>
+                                                <th className="px-4 py-3 text-center">{t('actions')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {attachmentsList.map(att => (
+                                                <tr key={att.id || att.version} className="hover:bg-slate-50/80 transition-colors">
+                                                    <td className="px-4 py-3 font-mono font-bold text-slate-800">
+                                                        v{att.version || 1}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-semibold text-slate-900">
+                                                        {att.original_name || att.filename}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-slate-500">
+                                                        {att.notes || '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-mono text-slate-500">
+                                                        {formatBytes(att.size)}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
+                                                        {att.uploaded_at
+                                                            ? new Date(att.uploaded_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { dateStyle: 'medium' })
+                                                            : '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {att.is_current ? (
+                                                            <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                {t('activeCvBadge')}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600">
+                                                                v{att.version || 1}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <div className="inline-flex items-center gap-1">
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                tooltipPosition="top"
+                                                                href={`${att.path}?name=${encodeURIComponent(att.original_name || att.filename || 'cv.pdf')}`}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                tooltip={t('previewFile')}
+                                                                icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                            />
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                tooltipPosition="top"
+                                                                href={`${att.path}?download=1&name=${encodeURIComponent(att.original_name || att.filename || 'cv.pdf')}`}
+                                                                tooltip={t('downloadFile')}
+                                                                icon="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                            />
+                                                            {!att.is_current && (
+                                                                <IconButton
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    tooltipPosition="top"
+                                                                    disabled={activatingAttId === att.id}
+                                                                    onClick={() => handleActivateAttachment(att.id)}
+                                                                    tooltip={t('setAsActiveCv')}
+                                                                    icon="M5 13l4 4L19 7"
+                                                                />
+                                                            )}
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                tooltipPosition="top"
+                                                                onClick={() => startReplaceAttachment(att)}
+                                                                tooltip={t('replaceThisFile')}
+                                                                icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                                            />
+                                                            <IconButton
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                tooltipPosition="top"
+                                                                disabled={deletingAttId === att.id}
+                                                                onClick={() => handleDeleteAttachment(att.id)}
+                                                                tooltip={t('deleteAttachment')}
+                                                                className="hover:text-rose-600 hover:bg-rose-50"
+                                                                icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     );
                 })()}
@@ -1282,10 +1337,10 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                 {socialLinks.map(s => (
                                     <div
                                         key={s.id || s.url}
-                                        className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-300 transition-all flex items-center justify-between bg-white shadow-xs"
+                                        className="p-4 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all flex items-center justify-between bg-white shadow-xs"
                                     >
                                         <div className="min-w-0 pr-2">
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700">
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700">
                                                 {s.platform}
                                             </span>
                                             <h4 className="font-bold text-xs text-slate-800 mt-1 truncate">
@@ -1295,7 +1350,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                 href={s.url}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-[11px] text-indigo-600 hover:underline truncate block font-mono mt-0.5"
+                                                className="text-[11px] text-blue-600 hover:underline truncate block font-mono mt-0.5"
                                             >
                                                 {s.url}
                                             </a>
@@ -1331,7 +1386,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
                         {/* Add Portfolio Form */}
                         <form onSubmit={handleAddPortfolio} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 mb-8 space-y-4">
-                            <h4 className="text-xs font-bold text-indigo-700 uppercase">إضافة مشروع أو عمل جديد</h4>
+                            <h4 className="text-xs font-bold text-blue-700 uppercase">إضافة مشروع أو عمل جديد</h4>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-[11px] font-bold text-slate-700 mb-1">اسم المشروع *</label>
@@ -1393,7 +1448,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                 {portfolioItems.map(p => (
                                     <div
                                         key={p.id}
-                                        className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between"
+                                        className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:border-blue-300 transition-all flex flex-col justify-between"
                                     >
                                         <div>
                                             {p.image_url ? (
@@ -1406,7 +1461,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                     />
                                                 </div>
                                             ) : (
-                                                <div className="h-28 bg-gradient-to-tr from-slate-100 to-indigo-50 flex items-center justify-center text-3xl">
+                                                <div className="h-28 bg-gradient-to-tr from-slate-100 to-blue-50 flex items-center justify-center text-3xl">
                                                     💻
                                                 </div>
                                             )}
@@ -1427,7 +1482,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                     href={p.url}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
+                                                    className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
                                                 >
                                                     🔗 معاينة المشروع
                                                 </a>
@@ -1464,7 +1519,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
                             <button
                                 onClick={() => setScheduleModalOpen(true)}
-                                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-100 flex items-center gap-1.5"
+                                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-100 flex items-center gap-1.5"
                             >
                                 + جدولة مقابلة جديدة
                             </button>
@@ -1479,7 +1534,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             <span className="font-black text-sm text-slate-800">
                                                 أسئلة التقييم المخصصة للمقابلة
                                             </span>
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700">
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">
                                                 {questionsList.length} محاور
                                             </span>
                                         </div>
@@ -1487,7 +1542,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         <button
                                             onClick={handleSaveInterviewScorecard}
                                             disabled={savingQuestions}
-                                            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 disabled:opacity-50"
+                                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 disabled:opacity-50"
                                         >
                                             {savingQuestions ? 'جاري الحفظ...' : '💾 اعتماد التقييم'}
                                         </button>
@@ -1525,11 +1580,11 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         {questionsList.map((q, idx) => (
                                             <div
                                                 key={q.id}
-                                                className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-200 transition-all bg-white shadow-xs space-y-3"
+                                                className="p-4 rounded-2xl border border-slate-200 hover:border-blue-200 transition-all bg-white shadow-xs space-y-3"
                                             >
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 font-black text-xs flex items-center justify-center shrink-0">
+                                                        <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 font-black text-xs flex items-center justify-center shrink-0">
                                                             {idx + 1}
                                                         </span>
                                                         <h5 className="font-bold text-xs text-slate-800">
@@ -1554,9 +1609,9 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                         max="10"
                                                         value={q.score}
                                                         onChange={e => handleUpdateQuestionScore(q.id, e.target.value)}
-                                                        className="flex-1 accent-indigo-600 cursor-pointer"
+                                                        className="flex-1 accent-blue-600 cursor-pointer"
                                                     />
-                                                    <span className="font-mono font-black text-indigo-700 text-xs min-w-[40px] text-end">
+                                                    <span className="font-mono font-black text-blue-700 text-xs min-w-[40px] text-end">
                                                         {q.score} / 10
                                                     </span>
                                                 </div>
@@ -1581,7 +1636,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         <span className="text-xs font-bold text-slate-400 block mb-1">
                                             المعدل النهائي للمقابلة
                                         </span>
-                                        <div className="text-4xl font-black text-indigo-700 my-2 font-mono">
+                                        <div className="text-4xl font-black text-blue-700 my-2 font-mono">
                                             {questionsList.length > 0
                                                 ? Math.round((questionsList.reduce((acc, q) => acc + Number(q.score), 0) / questionsList.length) * 10) / 10
                                                 : 8} <span className="text-sm font-normal text-slate-400">/ 10</span>
@@ -1667,13 +1722,13 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             className={`p-4 sm:p-5 rounded-2xl border transition-all ${
                                                 isReceived
                                                     ? 'bg-amber-50/40 border-amber-200 ms-0 me-6'
-                                                    : 'bg-indigo-50/40 border-indigo-200 ms-6 me-0'
+                                                    : 'bg-blue-50/40 border-blue-200 ms-6 me-0'
                                             }`}
                                         >
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center gap-2">
                                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                                        isReceived ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800'
+                                                        isReceived ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                                                     }`}>
                                                         {isReceived ? '📥 رسالة واردة من المتقدم' : '📤 رسالة صادرة من الإدارة'}
                                                     </span>
@@ -1720,7 +1775,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                 <button
                                     type="submit"
                                     disabled={sendingEmail}
-                                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 transition-all disabled:opacity-50"
+                                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 transition-all disabled:opacity-50"
                                 >
                                     {sendingEmail ? 'جاري الإرسال...' : 'إرسال الرد الآن ✉️'}
                                 </button>
@@ -1736,10 +1791,10 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                             سجل ومسار التدرج التاريخي للحالة
                         </h3>
 
-                        <div className="border-s-2 border-indigo-200 ms-4 ps-6 space-y-6 text-xs">
+                        <div className="border-s-2 border-blue-200 ms-4 ps-6 space-y-6 text-xs">
                             {applicant.status_logs?.map((log, idx) => (
                                 <div key={idx} className="relative">
-                                    <div className="absolute -start-[31px] top-1 w-3.5 h-3.5 rounded-full bg-indigo-600 border-2 border-white shadow-xs"></div>
+                                    <div className="absolute -start-[31px] top-1 w-3.5 h-3.5 rounded-full bg-blue-600 border-2 border-white shadow-xs"></div>
                                     <h4 className="font-bold text-slate-800 text-xs">
                                         {log.notes || `تم تغيير الحالة إلى ${t(`status_${log.to_status}`)}`}
                                     </h4>
@@ -1798,7 +1853,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                             </div>
                             <div className="pt-2 flex gap-2 justify-end">
                                 <button type="button" onClick={() => setStatusModalOpen(false)} className="px-4 py-2 border rounded-xl text-xs font-bold">{t('cancel')}</button>
-                                <button type="submit" disabled={updatingStatus} className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">
+                                <button type="submit" disabled={updatingStatus} className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">
                                     {updatingStatus ? 'جاري الحفظ...' : t('save')}
                                 </button>
                             </div>
@@ -1840,7 +1895,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                             </div>
                             <div className="pt-2 flex gap-2 justify-end">
                                 <button type="button" onClick={() => setScheduleModalOpen(false)} className="px-4 py-2 border rounded-xl text-xs font-bold">{t('cancel')}</button>
-                                <button type="submit" className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">تأكيد الجدولة</button>
+                                <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">تأكيد الجدولة</button>
                             </div>
                         </form>
                     </div>
@@ -1892,7 +1947,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                 <button
                                     type="submit"
                                     disabled={sendingDecision}
-                                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100"
+                                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-100"
                                 >
                                     {sendingDecision ? 'جاري الإرسال...' : 'إرسال الرد وتحديث الحالة'}
                                 </button>

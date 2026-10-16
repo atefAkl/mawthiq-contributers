@@ -98,7 +98,7 @@ export default function PublicApplyPage({ navigate }) {
         return (
             <GuestLayout>
                 <div className="py-24 text-center">
-                    <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                     <p className="text-xs text-slate-500 font-semibold">جاري تحميل بوابة التقديم...</p>
                 </div>
             </GuestLayout>
@@ -151,7 +151,7 @@ export default function PublicApplyPage({ navigate }) {
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">
                             {t('applicationReferenceNo')}
                         </p>
-                        <div className="text-2xl font-black text-indigo-700 font-mono tracking-widest my-1">
+                        <div className="text-2xl font-black text-blue-700 font-mono tracking-widest my-1">
                             {successData.application_no}
                         </div>
                         <p className="text-[11px] text-slate-500 mt-2">
@@ -188,7 +188,7 @@ export default function PublicApplyPage({ navigate }) {
                         </button>
                         <a
                             href="#/login"
-                            className="py-2.5 px-5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors"
+                            className="py-2.5 px-5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors"
                         >
                             دخول المشرفين
                         </a>
@@ -202,14 +202,14 @@ export default function PublicApplyPage({ navigate }) {
         <GuestLayout>
             <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
                 {/* Header Banner */}
-                <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-sky-600 px-6 sm:px-10 py-8 text-white">
+                <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-600 px-6 sm:px-10 py-8 text-white">
                     <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-xs mb-3">
                         ✨ {t('appName')}
                     </span>
                     <h2 className="text-xl sm:text-3xl font-black">
                         {t('publicWelcome')}
                     </h2>
-                    <p className="text-xs sm:text-sm text-indigo-100 mt-2 max-w-2xl leading-relaxed">
+                    <p className="text-xs sm:text-sm text-blue-100 mt-2 max-w-2xl leading-relaxed">
                         {t('publicSubtitle')}
                     </p>
                 </div>
@@ -228,7 +228,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.full_name}
                                 onChange={e => setFormData({ ...formData, full_name: e.target.value })}
                                 placeholder="محمد أحمد مصطفى"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
 
@@ -242,7 +242,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.email}
                                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                                 placeholder="name@example.com"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
 
@@ -256,7 +256,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.phone}
                                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                 placeholder="+20 100 123 4567"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
 
@@ -269,7 +269,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.national_id}
                                 onChange={e => setFormData({ ...formData, national_id: e.target.value })}
                                 placeholder="2950101XXXXXXX"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
                     </div>
@@ -285,7 +285,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.country}
                                 onChange={e => setFormData({ ...formData, country: e.target.value })}
                                 placeholder="مصر، السعودية، الإمارات..."
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
 
@@ -298,7 +298,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.city}
                                 onChange={e => setFormData({ ...formData, city: e.target.value })}
                                 placeholder="القاهرة، الرياض..."
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
 
@@ -310,7 +310,7 @@ export default function PublicApplyPage({ navigate }) {
                                 required
                                 value={formData.position}
                                 onChange={e => setFormData({ ...formData, position: e.target.value })}
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm bg-white"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-white"
                             >
                                 {config.allowed_positions?.map((pos, idx) => (
                                     <option key={idx} value={pos}>{pos}</option>
@@ -331,7 +331,7 @@ export default function PublicApplyPage({ navigate }) {
                                 max="40"
                                 value={formData.experience_years}
                                 onChange={e => setFormData({ ...formData, experience_years: parseInt(e.target.value) || 0 })}
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
 
@@ -344,7 +344,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.education_level}
                                 onChange={e => setFormData({ ...formData, education_level: e.target.value })}
                                 placeholder="بكالوريوس حاسبات، هندسة، فنون..."
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
                     </div>
@@ -360,7 +360,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.portfolio_url}
                                 onChange={e => setFormData({ ...formData, portfolio_url: e.target.value })}
                                 placeholder="https://myportfolio.com"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
 
@@ -373,7 +373,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.github_url}
                                 onChange={e => setFormData({ ...formData, github_url: e.target.value })}
                                 placeholder="https://github.com/username"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
 
@@ -386,7 +386,7 @@ export default function PublicApplyPage({ navigate }) {
                                 value={formData.linkedin_url}
                                 onChange={e => setFormData({ ...formData, linkedin_url: e.target.value })}
                                 placeholder="https://linkedin.com/in/username"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                             />
                         </div>
                     </div>
@@ -403,7 +403,7 @@ export default function PublicApplyPage({ navigate }) {
                                 onChange={e => setCurrentSkill(e.target.value)}
                                 onKeyDown={handleAddSkill}
                                 placeholder="اكتب مهارة واضغط إضافة (مثل: React, PHP, Docker...)"
-                                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs"
+                                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
                             />
                             <button
                                 type="button"
@@ -417,13 +417,13 @@ export default function PublicApplyPage({ navigate }) {
                             {formData.skills.map(skill => (
                                 <span
                                     key={skill}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100"
                                 >
                                     {skill}
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveSkill(skill)}
-                                        className="text-indigo-400 hover:text-indigo-700"
+                                        className="text-blue-400 hover:text-blue-700"
                                     >
                                         &times;
                                     </button>
@@ -442,7 +442,7 @@ export default function PublicApplyPage({ navigate }) {
                             value={formData.cover_letter}
                             onChange={e => setFormData({ ...formData, cover_letter: e.target.value })}
                             placeholder="تحدث بإيجاز عن خبراتك، وأبرز مشاريعك، ولماذا ترغب بالمساهمة معنا..."
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm leading-relaxed"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm leading-relaxed"
                         ></textarea>
                     </div>
 
@@ -451,7 +451,7 @@ export default function PublicApplyPage({ navigate }) {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-indigo-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-blue-600 via-blue-700 to-sky-600 hover:from-blue-700 hover:to-sky-700 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-blue-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {submitting && (
                                 <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

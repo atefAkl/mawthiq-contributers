@@ -196,12 +196,44 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                     )}
                 </PageHeader>
 
+                {/* 4 KPI Metrics Summary */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('manageUsers')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-slate-900">{users.length}</span>
+                            <span className="text-xs text-slate-400 font-semibold">{t('status_all')}</span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('active')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-blue-600">{users.filter(u => u.status === 'active').length}</span>
+                            <span className="text-xs text-emerald-600 font-bold">نشط</span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('permissionsMatrix')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-slate-900">{roles.length}</span>
+                            <span className="text-xs text-slate-400 font-semibold">أدوار</span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('role')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-lg font-black text-blue-600 truncate">{selectedRole?.display_name_ar || '—'}</span>
+                            <span className="text-xs text-slate-400 font-semibold">محدد</span>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Tab 1: Users Table */}
                 {activeTab === 'users' && (
-                    <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
                         <div className="overflow-x-auto">
                             <table className="w-full text-start text-xs text-slate-700">
-                                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                                <thead className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-bold text-slate-500">
                                     <tr>
                                         <th className="px-5 py-3.5 text-start">الاسم والبريد</th>
                                         <th className="px-5 py-3.5 text-start">الدور الوظيفي</th>
@@ -213,13 +245,13 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {users.map(u => (
-                                        <tr key={u.id} className="hover:bg-slate-50">
+                                        <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                                             <td className="px-5 py-3.5">
-                                                <div className="font-bold text-slate-800">{u.name}</div>
+                                                <div className="font-bold text-slate-900">{u.name}</div>
                                                 <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
                                             </td>
                                             <td className="px-5 py-3.5">
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                                                     {u.role?.display_name_ar || u.role?.name || 'مستخدم'}
                                                 </span>
                                             </td>
@@ -278,15 +310,15 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                                     onClick={() => handleSelectRole(r)}
                                     className={`w-full p-4 rounded-2xl border text-start transition-all ${
                                         selectedRole?.id === r.id
-                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100'
+                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100'
                                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                                     }`}
                                 >
                                     <div className="font-bold text-xs">{r.display_name_ar}</div>
-                                    <div className={`text-[11px] mt-0.5 ${selectedRole?.id === r.id ? 'text-indigo-100' : 'text-slate-400'}`}>
+                                    <div className={`text-[11px] mt-0.5 ${selectedRole?.id === r.id ? 'text-blue-100' : 'text-slate-400'}`}>
                                         {r.display_name_en}
                                     </div>
-                                    <div className={`text-[10px] mt-2 line-clamp-2 ${selectedRole?.id === r.id ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                    <div className={`text-[10px] mt-2 line-clamp-2 ${selectedRole?.id === r.id ? 'text-blue-200' : 'text-slate-500'}`}>
                                         {r.description}
                                     </div>
                                 </button>
@@ -337,7 +369,7 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                                                         key={p.id}
                                                         className={`flex items-start gap-3 p-2.5 rounded-xl border cursor-pointer transition-all ${
                                                             checked
-                                                                ? 'bg-white border-indigo-300 text-slate-900 shadow-xs'
+                                                                ? 'bg-white border-blue-300 text-slate-900 shadow-xs'
                                                                 : 'bg-transparent border-transparent text-slate-500 hover:bg-white/60'
                                                         }`}
                                                     >
@@ -346,7 +378,7 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                                                             disabled={selectedRole?.name === 'super_admin'}
                                                             checked={checked}
                                                             onChange={() => togglePermission(p.id)}
-                                                            className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                                                            className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                                                         />
                                                         <div>
                                                             <span className="font-bold text-xs block">{p.display_name_ar}</span>
@@ -462,7 +494,7 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100"
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100"
                                 >
                                     {t('save')}
                                 </button>

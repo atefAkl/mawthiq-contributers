@@ -90,15 +90,15 @@ export default function ProfilePage({ currentRoute, navigate }) {
                 </PageHeader>
 
                 {/* Account Summary Banner */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-500 text-white font-black text-2xl flex items-center justify-center shadow-md shadow-indigo-100">
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white font-black text-xl flex items-center justify-center shadow-xs">
                         {user?.name ? user.name.charAt(0) : 'U'}
                     </div>
                     <div>
-                        <h3 className="font-black text-lg text-slate-800">{user?.name}</h3>
+                        <h3 className="font-black text-base text-slate-900">{user?.name}</h3>
                         <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email}</p>
                         <div className="mt-2 flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                                 {lang === 'en' ? (user?.role?.display_name_en || user?.role?.name) : (user?.role?.display_name_ar || user?.role?.name || 'مدير')}
                             </span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -123,7 +123,7 @@ export default function ProfilePage({ currentRoute, navigate }) {
                                     required
                                     value={name}
                                     onChange={e => setName(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20"
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500/20"
                                 />
                             </div>
 
@@ -134,7 +134,7 @@ export default function ProfilePage({ currentRoute, navigate }) {
                                     required
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-indigo-500/20"
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-blue-500/20"
                                 />
                             </div>
 
@@ -165,7 +165,7 @@ export default function ProfilePage({ currentRoute, navigate }) {
                             <button
                                 type="submit"
                                 disabled={updatingProfile}
-                                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-100 disabled:opacity-50"
+                                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-100 disabled:opacity-50"
                             >
                                 {updatingProfile ? 'جاري الحفظ...' : t('save')}
                             </button>

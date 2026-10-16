@@ -338,120 +338,152 @@ export default function EmailsPage({ currentRoute, navigate }) {
                     />
                 </PageHeader>
 
-                {/* Filter Tabs & Search */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-xs space-y-3">
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                        {[
-                            { id: 'all', label: t('status_all'), count: stats.total || 0, icon: '📬' },
-                            { id: 'sent', label: t('sentEmails'), count: stats.sent || 0, icon: '📤' },
-                            { id: 'received', label: t('receivedEmails'), count: stats.received || 0, icon: '📥' },
-                            { id: 'unread', label: t('unreadEmails'), count: stats.unread || 0, icon: '✉️', highlight: (stats.unread || 0) > 0 },
-                            { id: 'starred', label: t('starredEmails'), count: stats.starred || 0, icon: '⭐' },
-                        ].map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveType(tab.id)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                                    activeType === tab.id
-                                        ? 'bg-indigo-600 text-white shadow-xs'
-                                        : 'text-slate-600 hover:bg-slate-100'
-                                }`}
-                            >
-                                <span>{tab.icon}</span>
-                                <span>{tab.label}</span>
-                                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
-                                    activeType === tab.id
-                                        ? 'bg-indigo-800 text-white'
-                                        : tab.highlight
-                                            ? 'bg-rose-500 text-white'
-                                            : 'bg-slate-200 text-slate-700'
-                                }`}>
-                                    {tab.count}
-                                </span>
-                            </button>
-                        ))}
+                {/* 4 KPI Metrics Summary */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('emails')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-slate-900">{stats.total || 0}</span>
+                            <span className="text-xs text-slate-400 font-semibold">{t('status_all')}</span>
+                        </div>
                     </div>
-
-                    <form onSubmit={handleSearch} className="flex gap-2">
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="ابحث بموضوع الرسالة، البريد الإلكتروني، أو المحتوى..."
-                            className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                        />
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all"
-                        >
-                            {t('search')}
-                        </button>
-                    </form>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('receivedEmails')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-blue-600">{stats.received || 0}</span>
+                            <span className="text-xs text-blue-500 font-semibold">وارد</span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('sentEmails')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-slate-900">{stats.sent || 0}</span>
+                            <span className="text-xs text-slate-400 font-semibold">صادر</span>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('unreadEmails')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-blue-600">{stats.unread || 0}</span>
+                            <span className="text-xs text-rose-500 font-bold">{(stats.unread || 0) > 0 ? 'جديد' : '—'}</span>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Bulk Actions Floating / Top Bar */}
-                {selectedIds.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-indigo-50/90 border border-indigo-200 rounded-2xl animate-in fade-in slide-in-from-top-1 duration-200 shadow-xs">
-                        <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
-                            <span className="text-xs font-black text-indigo-950">
-                                تم تحديد {selectedIds.length} من {emails.length} رسائل
-                            </span>
+                {/* Unified Data Card: Filters, Search, Bulk Actions & Emails List */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                    {/* Toolbar & Filter Tabs */}
+                    <div className="p-4 border-b border-slate-100 space-y-3">
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                            {[
+                                { id: 'all', label: t('status_all'), count: stats.total || 0, icon: '📬' },
+                                { id: 'sent', label: t('sentEmails'), count: stats.sent || 0, icon: '📤' },
+                                { id: 'received', label: t('receivedEmails'), count: stats.received || 0, icon: '📥' },
+                                { id: 'unread', label: t('unreadEmails'), count: stats.unread || 0, icon: '✉️', highlight: (stats.unread || 0) > 0 },
+                                { id: 'starred', label: t('starredEmails'), count: stats.starred || 0, icon: '⭐' },
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveType(tab.id)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                                        activeType === tab.id
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    <span>{tab.icon}</span>
+                                    <span>{tab.label}</span>
+                                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                                        activeType === tab.id
+                                            ? 'bg-blue-800 text-white'
+                                            : tab.highlight
+                                                ? 'bg-rose-500 text-white'
+                                                : 'bg-slate-100 text-slate-600'
+                                    }`}>
+                                        {tab.count}
+                                    </span>
+                                </button>
+                            ))}
                         </div>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            <IconButton
-                                size="sm"
-                                onClick={() => handleBulkAction('mark_read')}
-                                tooltip={t('markAsRead')}
-                                icon="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"
-                            />
-                            <IconButton
-                                size="sm"
-                                onClick={() => handleBulkAction('mark_unread')}
-                                tooltip={t('markAsUnread')}
-                                icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                            />
-                            <IconButton
-                                size="sm"
-                                variant="warning"
-                                onClick={() => handleBulkAction('star')}
-                                tooltip={t('starEmail')}
-                                icon="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                            />
-                            <IconButton
-                                size="sm"
-                                onClick={() => handleBulkAction('unstar')}
-                                tooltip={t('unstarEmail')}
-                                icon="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                            />
-                            <IconButton
-                                size="sm"
-                                variant="danger"
-                                onClick={handleBulkDelete}
-                                tooltip={t('deleteSelected')}
-                                icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                            <IconButton
-                                size="sm"
-                                onClick={() => setSelectedIds([])}
-                                tooltip="إلغاء التحديد"
-                                icon="M6 18L18 6M6 6l12 12"
-                            />
-                        </div>
-                    </div>
-                )}
 
-                {/* Emails List */}
-                <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                        <form onSubmit={handleSearch} className="flex gap-2">
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="ابحث بموضوع الرسالة، البريد الإلكتروني، أو المحتوى..."
+                                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all"
+                            >
+                                {t('search')}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Bulk Actions Bar */}
+                    {selectedIds.length > 0 && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-blue-50/80 border-b border-blue-100 text-xs">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                                <span className="text-xs font-bold text-blue-950">
+                                    تم تحديد {selectedIds.length} من {emails.length} رسائل
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <IconButton
+                                    size="sm"
+                                    onClick={() => handleBulkAction('mark_read')}
+                                    tooltip={t('markAsRead')}
+                                    icon="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"
+                                />
+                                <IconButton
+                                    size="sm"
+                                    onClick={() => handleBulkAction('mark_unread')}
+                                    tooltip={t('markAsUnread')}
+                                    icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                />
+                                <IconButton
+                                    size="sm"
+                                    variant="warning"
+                                    onClick={() => handleBulkAction('star')}
+                                    tooltip={t('starEmail')}
+                                    icon="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                                />
+                                <IconButton
+                                    size="sm"
+                                    onClick={() => handleBulkAction('unstar')}
+                                    tooltip={t('unstarEmail')}
+                                    icon="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                                />
+                                <IconButton
+                                    size="sm"
+                                    variant="danger"
+                                    onClick={handleBulkDelete}
+                                    tooltip={t('deleteSelected')}
+                                    icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                                <IconButton
+                                    size="sm"
+                                    onClick={() => setSelectedIds([])}
+                                    tooltip="إلغاء التحديد"
+                                    icon="M6 18L18 6M6 6l12 12"
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {/* List Header with Select All */}
-                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                    <div className="px-4 py-2.5 bg-slate-50/70 border-b border-slate-200 text-xs text-slate-500 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <label className="flex items-center gap-2 cursor-pointer select-none">
                                 <input
                                     type="checkbox"
                                     checked={emails.length > 0 && selectedIds.length === emails.length}
                                     onChange={handleToggleSelectAll}
-                                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                 />
                                 <span className="font-bold text-slate-700">تحديد الكل</span>
                             </label>
@@ -464,7 +496,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                     <div className="divide-y divide-slate-100">
                         {loading ? (
                             <div className="py-16 text-center text-slate-400">
-                                <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                                 جاري تحميل الرسائل...
                             </div>
                         ) : emails.length === 0 ? (
@@ -481,7 +513,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                         key={email.id}
                                         onClick={() => handleOpenView(email)}
                                         className={`group p-4 sm:px-6 hover:bg-slate-50 cursor-pointer transition-colors flex items-start justify-between gap-3 ${
-                                            isSelected ? 'bg-indigo-50/50' : isUnread ? 'bg-indigo-50/15' : 'bg-white'
+                                            isSelected ? 'bg-blue-50/50' : isUnread ? 'bg-blue-50/15' : 'bg-white'
                                         }`}
                                     >
                                         <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -491,7 +523,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                                 checked={isSelected}
                                                 onChange={(e) => handleToggleSelectOne(email.id, e)}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer mt-2 shrink-0"
+                                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer mt-2 shrink-0"
                                             />
 
                                             {/* Star Toggle */}
@@ -509,7 +541,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                             <div className={`mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                                                 email.type === 'received'
                                                     ? 'bg-amber-50 text-amber-600'
-                                                    : 'bg-indigo-50 text-indigo-600'
+                                                    : 'bg-blue-50 text-blue-600'
                                             }`}>
                                                 {email.type === 'received' ? '📥' : '📤'}
                                             </div>
@@ -518,7 +550,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                                 <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                                     {/* Unread indicator dot */}
                                                     {isUnread && (
-                                                        <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" title="غير مقروءة"></span>
+                                                        <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" title="غير مقروءة"></span>
                                                     )}
 
                                                     <span className={`text-xs ${isUnread ? 'font-black text-slate-900' : 'font-semibold text-slate-700'}`}>
@@ -532,13 +564,13 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                                     )}
 
                                                     <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
-                                                        email.type === 'received' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800'
+                                                        email.type === 'received' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                                                     }`}>
                                                         {email.type === 'received' ? 'وارد' : 'صادر'}
                                                     </span>
 
                                                     {isUnread && (
-                                                        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-700">
+                                                        <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-blue-100 text-blue-700">
                                                             جديدة
                                                         </span>
                                                     )}
@@ -560,21 +592,21 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                             <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={(e) => handleToggleRead(email, e)}
-                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-all text-xs"
+                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 transition-all text-xs"
                                                     title={email.is_read ? t('markAsUnread') : t('markAsRead')}
                                                 >
                                                     {email.is_read ? '✉️' : '📖'}
                                                 </button>
                                                 <button
                                                     onClick={(e) => handleReply(email, e)}
-                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-all text-xs"
+                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 transition-all text-xs"
                                                     title={t('reply')}
                                                 >
                                                     ↩️
                                                 </button>
                                                 <button
                                                     onClick={(e) => handleForward(email, e)}
-                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-all text-xs"
+                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 transition-all text-xs"
                                                     title={t('forward')}
                                                 >
                                                     ↪️
@@ -608,7 +640,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                             <div className="flex items-center gap-2">
                                 <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                    viewEmail.type === 'received' ? 'bg-amber-50 text-amber-800' : 'bg-indigo-50 text-indigo-800'
+                                    viewEmail.type === 'received' ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'
                                 }`}>
                                     {viewEmail.type === 'received' ? '📥 رسالة واردة' : '📤 رسالة صادرة'}
                                 </span>
@@ -667,7 +699,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                 <div className="col-span-2 pt-1 border-t border-slate-200/60 text-slate-400 text-[11px] flex justify-between">
                                     <span>التاريخ: {new Date(viewEmail.created_at).toLocaleString('ar-EG')}</span>
                                     {viewEmail.applicant && (
-                                        <span className="font-bold text-indigo-600">
+                                        <span className="font-bold text-blue-600">
                                             المتقدم: {viewEmail.applicant.full_name} ({viewEmail.applicant.application_number})
                                         </span>
                                     )}
@@ -687,7 +719,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => handleReply(viewEmail)}
-                                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all"
+                                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all"
                                 >
                                     <span>↩️</span>
                                     <span>{t('reply')}</span>
@@ -827,7 +859,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                 <button
                                     type="submit"
                                     disabled={sending}
-                                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-100 disabled:opacity-50"
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 disabled:opacity-50"
                                 >
                                     {sending ? 'جاري الإرسال...' : t('sendEmail')}
                                 </button>

@@ -68,7 +68,7 @@ export default function LoginPage({ navigate }) {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="admin@contributors.app"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
                         />
                     </div>
 
@@ -82,14 +82,14 @@ export default function LoginPage({ navigate }) {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 hover:to-sky-700 text-white font-bold text-sm shadow-md shadow-blue-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {loading && (
                             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -110,7 +110,7 @@ export default function LoginPage({ navigate }) {
                         <button
                             type="button"
                             onClick={() => fillCredentials('admin@contributors.app', 'password')}
-                            className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-indigo-50/60 hover:border-indigo-200 text-xs font-semibold text-slate-700 transition-all text-start"
+                            className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-blue-50/60 hover:border-blue-200 text-xs font-semibold text-slate-700 transition-all text-start"
                         >
                             <span>👑 {t('loginAsAdmin')}</span>
                             <span className="text-[10px] text-slate-400 font-mono">admin@contributors.app</span>
@@ -118,7 +118,7 @@ export default function LoginPage({ navigate }) {
                         <button
                             type="button"
                             onClick={() => fillCredentials('hr@contributors.app', 'password')}
-                            className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-indigo-50/60 hover:border-indigo-200 text-xs font-semibold text-slate-700 transition-all text-start"
+                            className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-blue-50/60 hover:border-blue-200 text-xs font-semibold text-slate-700 transition-all text-start"
                         >
                             <span>💼 {t('loginAsHR')}</span>
                             <span className="text-[10px] text-slate-400 font-mono">hr@contributors.app</span>
@@ -126,7 +126,7 @@ export default function LoginPage({ navigate }) {
                         <button
                             type="button"
                             onClick={() => fillCredentials('interviewer@contributors.app', 'password')}
-                            className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-indigo-50/60 hover:border-indigo-200 text-xs font-semibold text-slate-700 transition-all text-start"
+                            className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-blue-50/60 hover:border-blue-200 text-xs font-semibold text-slate-700 transition-all text-start"
                         >
                             <span>🎯 {t('loginAsInterviewer')}</span>
                             <span className="text-[10px] text-slate-400 font-mono">interviewer@...</span>

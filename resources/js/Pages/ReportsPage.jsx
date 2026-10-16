@@ -37,7 +37,7 @@ export default function ReportsPage({ currentRoute, navigate }) {
         return (
             <AppLayout currentRoute={currentRoute} navigate={navigate}>
                 <div className="py-24 text-center text-slate-400">
-                    <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                     جاري إعداد التقارير والإحصائيات...
                 </div>
             </AppLayout>
@@ -81,37 +81,41 @@ export default function ReportsPage({ currentRoute, navigate }) {
                     <p className="text-xs text-slate-600">{t('reports')} - {new Date().toLocaleDateString('ar-EG')}</p>
                 </div>
 
-                {/* KPI Metrics Summary */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('totalApplicants')}</span>
-                        <span className="text-2xl font-black text-slate-800">{overview?.total_applicants ?? 0}</span>
+                {/* KPI Metrics Summary (4 KPI Stat Cards) */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('totalApplicants')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-slate-900">{overview?.total_applicants ?? 0}</span>
+                            <span className="text-xs text-slate-400 font-semibold">{t('status_all')}</span>
+                        </div>
                     </div>
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('status_participant')}</span>
-                        <span className="text-2xl font-black text-indigo-600">{overview?.participant_count ?? 0}</span>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('status_participant')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-blue-600">{overview?.participant_count ?? 0}</span>
+                            <span className="text-xs text-blue-500 font-semibold">نشط</span>
+                        </div>
                     </div>
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('status_probation')}</span>
-                        <span className="text-2xl font-black text-amber-600">{overview?.probation_count ?? 0}</span>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('status_accepted')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-slate-900">{overview?.accepted_count ?? 0}</span>
+                            <span className="text-xs text-emerald-600 font-bold">{overview?.acceptance_rate ?? 0}%</span>
+                        </div>
                     </div>
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('status_accepted')}</span>
-                        <span className="text-2xl font-black text-emerald-600">{overview?.accepted_count ?? 0}</span>
-                    </div>
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('acceptanceRate')}</span>
-                        <span className="text-2xl font-black text-emerald-600">{overview?.acceptance_rate ?? 0}%</span>
-                    </div>
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-xs">
-                        <span className="text-[11px] font-bold text-slate-400 block mb-1">{t('avgInterviewScore')}</span>
-                        <span className="text-2xl font-black text-indigo-700">{overview?.avg_interview_score ? `${overview.avg_interview_score}/10` : '—'}</span>
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('avgInterviewScore')}</span>
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-black text-blue-600">{overview?.avg_interview_score ? `${overview.avg_interview_score}/10` : '—'}</span>
+                            <span className="text-xs text-slate-400 font-semibold">تقييم</span>
+                        </div>
                     </div>
                 </div>
 
                 {/* Conversion Funnel */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
-                    <h3 className="font-bold text-sm text-slate-800 mb-2">
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+                    <h3 className="font-bold text-sm text-slate-900 mb-1">
                         {t('pipelineFunnel')}
                     </h3>
                     <p className="text-xs text-slate-500 mb-6">
@@ -129,12 +133,12 @@ export default function ReportsPage({ currentRoute, navigate }) {
                                         <span>{stage.label_ar} ({stage.label_en})</span>
                                         <span>{stage.count} مرشح ({pct}%)</span>
                                     </div>
-                                    <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden p-0.5">
+                                    <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden p-0.5">
                                         <div
                                             className="h-full rounded-full transition-all duration-500"
                                             style={{
                                                 width: `${Math.max(pct, 5)}%`,
-                                                backgroundColor: stage.color
+                                                backgroundColor: stage.color || '#2563EB'
                                             }}
                                         ></div>
                                     </div>
@@ -145,14 +149,14 @@ export default function ReportsPage({ currentRoute, navigate }) {
                 </div>
 
                 {/* Applicants by Position & Roles */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
-                    <h3 className="font-bold text-sm text-slate-800 mb-4">
-                        {t('positionDistribution')} (الطلبات ونسب القبول حسب التخصص)
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+                    <h3 className="font-bold text-sm text-slate-900 mb-4">
+                        {t('positionDistribution')}
                     </h3>
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-start text-xs text-slate-700">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                            <thead className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-bold text-slate-500">
                                 <tr>
                                     <th className="px-4 py-3 text-start">الدور / التخصص</th>
                                     <th className="px-4 py-3 text-center">عدد المتقدمين</th>
@@ -166,11 +170,11 @@ export default function ReportsPage({ currentRoute, navigate }) {
                                     const sharePct = Math.round((row.count / totalApps) * 100);
 
                                     return (
-                                        <tr key={idx} className="hover:bg-slate-50">
-                                            <td className="px-4 py-3 font-bold text-slate-800">
+                                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="px-4 py-3 font-bold text-slate-900">
                                                 {row.position}
                                             </td>
-                                            <td className="px-4 py-3 text-center font-semibold">
+                                            <td className="px-4 py-3 text-center font-semibold text-slate-700">
                                                 {row.count}
                                             </td>
                                             <td className="px-4 py-3 text-center font-bold text-emerald-600">
@@ -180,7 +184,7 @@ export default function ReportsPage({ currentRoute, navigate }) {
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                                                         <div
-                                                            className="h-full bg-indigo-600 rounded-full"
+                                                            className="h-full bg-blue-600 rounded-full"
                                                             style={{ width: `${sharePct}%` }}
                                                         ></div>
                                                     </div>
@@ -196,16 +200,16 @@ export default function ReportsPage({ currentRoute, navigate }) {
                 </div>
 
                 {/* Monthly Trends */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
-                    <h3 className="font-bold text-sm text-slate-800 mb-4">
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+                    <h3 className="font-bold text-sm text-slate-900 mb-4">
                         {t('monthlyTrends')}
                     </h3>
 
                     <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                         {trends?.map((tItem, idx) => (
-                            <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                            <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
                                 <span className="text-[11px] font-bold text-slate-500 block mb-1 truncate">{tItem.month}</span>
-                                <span className="text-xl font-black text-slate-800 block">{tItem.total} طلب</span>
+                                <span className="text-lg font-black text-slate-900 block">{tItem.total} طلب</span>
                                 <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">{tItem.accepted} مقبول</span>
                             </div>
                         ))}

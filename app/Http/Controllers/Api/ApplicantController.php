@@ -40,15 +40,15 @@ class ApplicantController extends Controller
             $applicant->saveQuietly();
         }
 
-        // Enrich with live file existence check
+        // Enrich with live file existence check (strip internal storage_path when serializing for client)
         return array_values(array_map(function ($att) {
             $relPath = $att['storage_path'] ?? ltrim(preg_replace('#^/storage/#', '', $att['path'] ?? ''), '/');
             $exists = $relPath && Storage::disk('public')->exists($relPath);
-            $att['storage_path'] = $relPath;
             $att['file_exists'] = $exists;
             if ($exists && empty($att['size'])) {
                 $att['size'] = Storage::disk('public')->size($relPath);
             }
+            unset($att['storage_path']);
             return $att;
         }, $attachments));
     }
