@@ -29,6 +29,9 @@
      - **[LoginPage.jsx & PublicApplyPage.jsx]:** توحيد نماذج الدخول والتقديم الخارجي بالهوية البصرية الجديدة.
   3. **حل أمني في الـ Backend (`ApplicantController.php`):** إخفاء حقل `storage_path` الداخلي من مخرجات الـ API لضمان عدم تسريب أي مسارات سيرفر.
   4. **بناء أصول الإنتاج محلياً بنجاح (`npm run build`):** توليد ملفات الـ JS والـ CSS بنجاح تام وبدون أي أخطاء، وجاهزيتها للتجربة المحلية على `http://127.0.0.1:8000`.
+  5. **الرفع إلى المستودع البعيد وحزم التحديث للاستضافة (A2 Hosting):**
+     - تم اعتماد التجربة المحلية بنجاح ورفع الفرع `development` إلى GitHub (`git push origin development` - Commit `c6d0208`).
+     - إعادة إنشاء وتحديث حزمة النشر [mawthiq_update_deploy_a2hosting.zip](file:///c:/laragon/www/mawthiq-contributers/mawthiq_update_deploy_a2hosting.zip) (بحجم `~2.4 MB`) شاملة أصول الإنتاج `public/build/`، وضبط الصلاحيات المناسبة لاستضافة A2 Hosting (`0755` للمجلدات و `0644` للملفات و `0755` لملف `artisan`)، واستبعاد `vendor/` و `node_modules/` والملفات التجريبية.
 
 ---
 
