@@ -1,6 +1,53 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
+/**
+ * Clean pasted HTML by stripping Word/Office styling, scripts, styles, and base64 images
+ */
+function cleanHtml(rawHtml) {
+    if (!rawHtml) return '';
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawHtml, 'text/html');
+
+        // 1. Remove dangerous or bloated tags
+        doc.querySelectorAll('script, style, meta, link, xml, object, embed, applet').forEach(el => el.remove());
+
+        // 2. Remove base64 images or oversized media
+        doc.querySelectorAll('img').forEach(img => {
+            if (img.src && img.src.startsWith('data:image')) {
+                img.remove();
+            }
+        });
+
+        // 3. Strip all style, class, and XML/MSO attributes
+        const allElements = doc.body.querySelectorAll('*');
+        allElements.forEach(el => {
+            el.removeAttribute('style');
+            el.removeAttribute('class');
+            el.removeAttribute('id');
+            el.removeAttribute('lang');
+            el.removeAttribute('dir');
+            Array.from(el.attributes).forEach(attr => {
+                if (attr.name.startsWith('data-') || attr.name.startsWith('xml') || attr.name.startsWith('mso-') || attr.name.startsWith('o:')) {
+                    el.removeAttribute(attr.name);
+                }
+            });
+        });
+
+        // 4. Unwrap empty or unstyled spans
+        doc.body.querySelectorAll('span').forEach(span => {
+            if (span.attributes.length === 0) {
+                span.replaceWith(...span.childNodes);
+            }
+        });
+
+        return doc.body.innerHTML.trim();
+    } catch {
+        return rawHtml;
+    }
+}
+
 export default function SmartEditor({
     value = '',
     onChange,
@@ -12,7 +59,7 @@ export default function SmartEditor({
 }) {
     const { t, isRtl } = useLanguage();
     const editorRef = useRef(null);
-    const lastHtmlRef = useRef(value || '');
+    const lastHtmlRef = useRef('');
     const [currentFormat, setCurrentFormat] = useState('p');
     const [isBold, setIsBold] = useState(false);
     const [isOrderedList, setIsOrderedList] = useState(false);
@@ -52,11 +99,18 @@ export default function SmartEditor({
         }
     }, [readOnly, resolvedDir]);
 
-    // Synchronize external value changes if not matching internal state
+    // Keep editor content synchronized with prop value on mount and external changes
     useEffect(() => {
-        if (editorRef.current && value !== lastHtmlRef.current) {
-            editorRef.current.innerHTML = value || '';
-            lastHtmlRef.current = value || '';
+        if (editorRef.current) {
+            const currentContent = editorRef.current.innerHTML;
+            const targetContent = value || '';
+
+            // Update DOM only if content differs (prevents cursor jump when typing, but populates on load/edit)
+            if (currentContent !== targetContent) {
+                editorRef.current.innerHTML = targetContent;
+                lastHtmlRef.current = targetContent;
+            }
+
             const textContent = editorRef.current.textContent || '';
             setIsEmpty(!textContent.trim() && !editorRef.current.querySelector('img, hr, table'));
         }
@@ -76,10 +130,33 @@ export default function SmartEditor({
         updateActiveStates();
     };
 
-    const exec = (command, value = null) => {
+    const handlePaste = (e) => {
+        if (readOnly) return;
+        e.preventDefault();
+        const clipboard = e.clipboardData;
+        if (!clipboard) return;
+
+        const html = clipboard.getData('text/html');
+        const text = clipboard.getData('text/plain');
+
+        if (html) {
+            const cleaned = cleanHtml(html);
+            if (cleaned && cleaned.includes('<')) {
+                document.execCommand('insertHTML', false, cleaned);
+            } else {
+                document.execCommand('insertText', false, text || cleaned);
+            }
+        } else if (text) {
+            document.execCommand('insertText', false, text);
+        }
+
+        handleInput();
+    };
+
+    const exec = (command, val = null) => {
         if (readOnly) return;
         editorRef.current?.focus();
-        document.execCommand(command, false, value);
+        document.execCommand(command, false, val);
         handleInput();
         updateActiveStates();
     };
@@ -87,7 +164,6 @@ export default function SmartEditor({
     const handleFormatBlock = (tag) => {
         if (readOnly) return;
         editorRef.current?.focus();
-        // Wraps current line/block in <p>, <h3>, or <h4>
         document.execCommand('formatBlock', false, tag);
         handleInput();
         updateActiveStates();
@@ -296,6 +372,7 @@ export default function SmartEditor({
                     ref={editorRef}
                     contentEditable={!readOnly}
                     onInput={handleInput}
+                    onPaste={handlePaste}
                     onKeyUp={updateActiveStates}
                     onMouseUp={updateActiveStates}
                     dir={resolvedDir}

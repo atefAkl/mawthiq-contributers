@@ -58,8 +58,8 @@ class ScorecardTemplateController extends Controller
             'questions.*.id' => 'nullable|string',
             'questions.*.question' => 'required|string|max:500',
             'questions.*.category' => 'nullable|string|max:100',
-            'questions.*.expected_answer' => 'nullable|string|max:5000',
-            'questions.*.answer_weaknesses' => 'nullable|string|max:5000',
+            'questions.*.expected_answer' => 'nullable|string|max:65000',
+            'questions.*.answer_weaknesses' => 'nullable|string|max:65000',
             'questions.*.max_score' => 'required|numeric|min:1|max:500',
             'is_active' => 'nullable|boolean',
         ]);
@@ -74,8 +74,8 @@ class ScorecardTemplateController extends Controller
                 'id' => $q['id'] ?? ('q_' . ($index + 1) . '_' . time()),
                 'question' => trim($q['question']),
                 'category' => !empty($q['category']) ? trim($q['category']) : 'عام',
-                'expected_answer' => $q['expected_answer'] ?? '',
-                'answer_weaknesses' => $q['answer_weaknesses'] ?? '',
+                'expected_answer' => $this->sanitizeRichText($q['expected_answer'] ?? ''),
+                'answer_weaknesses' => $this->sanitizeRichText($q['answer_weaknesses'] ?? ''),
                 'max_score' => (float)$q['max_score'],
             ];
         }, $validated['questions'], array_keys($validated['questions']));
@@ -118,8 +118,8 @@ class ScorecardTemplateController extends Controller
             'questions.*.id' => 'nullable|string',
             'questions.*.question' => 'required|string|max:500',
             'questions.*.category' => 'nullable|string|max:100',
-            'questions.*.expected_answer' => 'nullable|string|max:5000',
-            'questions.*.answer_weaknesses' => 'nullable|string|max:5000',
+            'questions.*.expected_answer' => 'nullable|string|max:65000',
+            'questions.*.answer_weaknesses' => 'nullable|string|max:65000',
             'questions.*.max_score' => 'required|numeric|min:1|max:500',
             'is_active' => 'nullable|boolean',
         ]);
@@ -132,8 +132,8 @@ class ScorecardTemplateController extends Controller
                 'id' => $q['id'] ?? ('q_' . ($index + 1) . '_' . time()),
                 'question' => trim($q['question']),
                 'category' => !empty($q['category']) ? trim($q['category']) : 'عام',
-                'expected_answer' => $q['expected_answer'] ?? '',
-                'answer_weaknesses' => $q['answer_weaknesses'] ?? '',
+                'expected_answer' => $this->sanitizeRichText($q['expected_answer'] ?? ''),
+                'answer_weaknesses' => $this->sanitizeRichText($q['answer_weaknesses'] ?? ''),
                 'max_score' => (float)$q['max_score'],
             ];
         }, $validated['questions'], array_keys($validated['questions']));
@@ -165,5 +165,28 @@ class ScorecardTemplateController extends Controller
         return response()->json([
             'message' => 'تم حذف كرت التقييم بنجاح.',
         ]);
+    }
+
+    /**
+     * Sanitize rich text HTML to remove potential XSS and harmful elements.
+     */
+    private function sanitizeRichText(?string $html): string
+    {
+        if (empty($html)) {
+            return '';
+        }
+
+        // Strip scripts, styles, objects, embeds, iframes, and dangerous attributes
+        $cleaned = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+        $cleaned = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $cleaned);
+        $cleaned = preg_replace('/<iframe\b[^>]*>(.*?)<\/iframe>/is', '', $cleaned);
+        $cleaned = preg_replace('/<object\b[^>]*>(.*?)<\/object>/is', '', $cleaned);
+        $cleaned = preg_replace('/<embed\b[^>]*>(.*?)<\/embed>/is', '', $cleaned);
+        
+        // Strip inline on* event handlers (e.g. onclick, onerror)
+        $cleaned = preg_replace('/\s*on\w+\s*=\s*(["\']).*?\1/i', '', $cleaned);
+        $cleaned = preg_replace('/\s*on\w+\s*=\s*[^>\s]+/i', '', $cleaned);
+
+        return trim($cleaned);
     }
 }
