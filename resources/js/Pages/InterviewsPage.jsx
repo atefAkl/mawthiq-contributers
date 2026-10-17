@@ -130,6 +130,16 @@ export default function InterviewsPage({ currentRoute, navigate }) {
         showToast(t('downloadIcsCalendar'), 'info');
     };
 
+    const filteredInterviews = interviews.filter(item => {
+        if (!search.trim()) return true;
+        const q = search.trim().toLowerCase();
+        const applicantName = (item.applicant?.full_name || '').toLowerCase();
+        const position = (item.applicant?.position || '').toLowerCase();
+        const interviewerName = (item.interviewer?.name || '').toLowerCase();
+        const appNo = (item.applicant?.application_no || '').toLowerCase();
+        return applicantName.includes(q) || position.includes(q) || interviewerName.includes(q) || appNo.includes(q);
+    });
+
     return (
         <AppLayout currentRoute={currentRoute} navigate={navigate}>
             <div className="space-y-4">
@@ -231,6 +241,15 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                             <svg className="w-4 h-4 text-slate-400 absolute start-3 top-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearch('')}
+                                    className="absolute end-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                                >
+                                    &times;
+                                </button>
+                            )}
                         </div>
 
                         <IconButton
@@ -359,6 +378,14 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                         rel="noreferrer"
                                                         tooltip={t('addToGoogleCalendar')}
                                                         icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                                    />
+                                                    <IconButton
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        tooltipPosition="top"
+                                                        onClick={() => downloadIcs(item)}
+                                                        tooltip={t('downloadIcsCalendar')}
+                                                        icon="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                                                     />
                                                     <IconButton
                                                         size="sm"
