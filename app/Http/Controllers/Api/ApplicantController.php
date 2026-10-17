@@ -81,6 +81,30 @@ class ApplicantController extends Controller
             $query->where('position', $request->position);
         }
 
+        // Availability Filter (set: has windows/days, not_set: empty/null)
+        if ($request->filled('availability') && $request->availability !== 'all') {
+            if ($request->availability === 'set') {
+                $query->whereNotNull('availability')
+                      ->where(function ($q) {
+                          $q->whereJsonLength('availability->windows', '>', 0)
+                            ->orWhereJsonLength('availability->preferred_days', '>', 0);
+                      });
+            } elseif ($request->availability === 'not_set') {
+                $query->where(function ($q) {
+                    $q->whereNull('availability')
+                      ->orWhere(function ($sub) {
+                          $sub->where(function ($w) {
+                              $w->whereNull('availability->windows')
+                                ->orWhereJsonLength('availability->windows', '=', 0);
+                          })->where(function ($p) {
+                              $p->whereNull('availability->preferred_days')
+                                ->orWhereJsonLength('availability->preferred_days', '=', 0);
+                          });
+                      });
+                });
+            }
+        }
+
         // Sort
         $sortField = $request->get('sort_by', 'created_at');
         $sortDir = $request->get('sort_dir', 'desc');
@@ -96,6 +120,23 @@ class ApplicantController extends Controller
             'probation' => Applicant::where('status', 'probation')->count(),
             'accepted' => Applicant::where('status', 'accepted')->count(),
             'rejected' => Applicant::where('status', 'rejected')->count(),
+            'availability_set' => Applicant::whereNotNull('availability')
+                ->where(function ($q) {
+                    $q->whereJsonLength('availability->windows', '>', 0)
+                      ->orWhereJsonLength('availability->preferred_days', '>', 0);
+                })->count(),
+            'availability_not_set' => Applicant::where(function ($q) {
+                $q->whereNull('availability')
+                  ->orWhere(function ($sub) {
+                      $sub->where(function ($w) {
+                          $w->whereNull('availability->windows')
+                            ->orWhereJsonLength('availability->windows', '=', 0);
+                      })->where(function ($p) {
+                          $p->whereNull('availability->preferred_days')
+                            ->orWhereJsonLength('availability->preferred_days', '=', 0);
+                      });
+                  });
+            })->count(),
         ];
 
         return response()->json([

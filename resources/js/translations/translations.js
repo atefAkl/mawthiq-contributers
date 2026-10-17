@@ -347,6 +347,16 @@ export const translations = {
         linkCopied: 'تم نسخ الرابط للحافظة',
         saveScorecardEvaluation: 'حفظ التقييم والدرجات',
         evaluatedQuestionsCount: 'الأسئلة المقيمة',
+        deleteInterview: 'حذف المقابلة',
+        confirmDeleteInterview: 'هل أنت متأكد من حذف هذه المقابلة نهائياً؟',
+        interviewDeletedSuccess: 'تم حذف المقابلة بنجاح.',
+        viewInterviewCandidate: 'عرض المقابلة في حساب الشخص (تبويب المقابلات)',
+        filterAvailabilityAll: 'كل حالات التفرغ',
+        filterAvailabilitySet: 'تفرغ محدد',
+        filterAvailabilityNotSet: 'بدون تفرغ محدد',
+        availabilityStatus: 'حالة التفرغ',
+        hasAvailabilityBadge: 'تفرغ محدد',
+        noAvailabilityBadge: 'بدون تفرغ',
     },
     en: {
         // App & Navigation (Short & Expressive)
@@ -696,5 +706,15 @@ export const translations = {
         linkCopied: 'Meeting link copied to clipboard',
         saveScorecardEvaluation: 'Save Scorecard Evaluation',
         evaluatedQuestionsCount: 'Evaluated Questions',
+        deleteInterview: 'Delete Interview',
+        confirmDeleteInterview: 'Are you sure you want to permanently delete this interview?',
+        interviewDeletedSuccess: 'Interview deleted successfully.',
+        viewInterviewCandidate: 'View in Applicant Profile (Interviews Tab)',
+        filterAvailabilityAll: 'All Availability',
+        filterAvailabilitySet: 'Availability Set',
+        filterAvailabilityNotSet: 'Availability Not Set',
+        availabilityStatus: 'Availability Status',
+        hasAvailabilityBadge: 'Availability Set',
+        noAvailabilityBadge: 'No Availability',
     }
 };

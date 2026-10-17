@@ -22,6 +22,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
 
     // Filters & Search
     const [activeStatus, setActiveStatus] = useState('all');
+    const [availabilityFilter, setAvailabilityFilter] = useState('all'); // 'all', 'set', 'not_set'
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'kanban'
 
@@ -82,12 +83,13 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
         body: '',
     });
 
-    const loadApplicants = async (page = 1, status = activeStatus, q = search) => {
+    const loadApplicants = async (page = 1, status = activeStatus, q = search, avail = availabilityFilter) => {
         setLoading(true);
         try {
             const res = await api.get('/applicants', {
                 page,
                 status: status === 'all' ? '' : status,
+                availability: avail === 'all' ? '' : avail,
                 search: q,
                 per_page: 20
             });
@@ -114,12 +116,12 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                 return;
             }
         }
-        loadApplicants(1, activeStatus, search);
-    }, [activeStatus, currentRoute]);
+        loadApplicants(1, activeStatus, search, availabilityFilter);
+    }, [activeStatus, availabilityFilter, currentRoute]);
 
     const handleSearch = (e) => {
         e.preventDefault();
-        loadApplicants(1, activeStatus, search);
+        loadApplicants(1, activeStatus, search, availabilityFilter);
     };
 
     const openStatusModal = (app, nextStage = null) => {
@@ -293,6 +295,17 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
         { id: 'rejected', label: t('status_rejected'), count: counts.rejected || 0 },
     ];
 
+    const availabilityTabs = [
+        { id: 'all', label: t('filterAvailabilityAll') },
+        { id: 'set', label: `${t('filterAvailabilitySet')} (${counts.availability_set ?? 0})` },
+        { id: 'not_set', label: `${t('filterAvailabilityNotSet')} (${counts.availability_not_set ?? 0})` },
+    ];
+
+    const hasAvailability = (app) => {
+        return (Array.isArray(app?.availability?.windows) && app.availability.windows.length > 0)
+            || (Array.isArray(app?.preferred_days) && app.preferred_days.length > 0);
+    };
+
     const kanbanStages = ['applicant', 'participant', 'probation', 'accepted', 'rejected'];
 
     return (
@@ -436,21 +449,46 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                         </div>
                     </div>
 
-                    {/* Status Filter Pills Row (Matches Reference Filter Buttons) */}
-                    <div className="px-3.5 py-2.5 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-                        {statusTabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveStatus(tab.id)}
-                                className={`px-3 py-1 rounded-md text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
-                                    activeStatus === tab.id
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
+                    {/* Status & Availability Filter Pills Row */}
+                    <div className="px-3.5 py-2.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                            {statusTabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setActiveStatus(tab.id)}
+                                    className={`px-3 py-1 rounded-md text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                                        activeStatus === tab.id
+                                            ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Availability Filter Segment */}
+                        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-lg border border-slate-200 text-xs">
+                            <span className="text-[11px] font-bold text-slate-500 px-1.5 flex items-center gap-1">
+                                <span>🗓️</span>
+                                <span>{t('availabilityStatus')}:</span>
+                            </span>
+                            {availabilityTabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setAvailabilityFilter(tab.id)}
+                                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                                        availabilityFilter === tab.id
+                                            ? 'bg-white text-blue-600 shadow-2xs font-extrabold border border-slate-200/60'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Content View: Table View OR Kanban View */}
@@ -499,6 +537,19 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                                             </svg>
                                                             <span>{app.full_name}</span>
                                                         </button>
+                                                        <div className="mt-1">
+                                                            {hasAvailability(app) ? (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                                                    <span>🗓️</span>
+                                                                    <span>{t('hasAvailabilityBadge')}</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                                                    <span>⚠️</span>
+                                                                    <span>{t('noAvailabilityBadge')}</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
 
                                                     <td className="px-4 py-3 text-slate-600 font-medium">
@@ -664,6 +715,19 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                                             </div>
                                                             <div className="text-[11px] text-slate-500 truncate">
                                                                 {app.position}
+                                                            </div>
+                                                            <div className="pt-0.5">
+                                                                {hasAvailability(app) ? (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                                                        <span>🗓️</span>
+                                                                        <span>{t('hasAvailabilityBadge')}</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                                                        <span>⚠️</span>
+                                                                        <span>{t('noAvailabilityBadge')}</span>
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                             <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] text-slate-400">
                                                                 <span className="font-mono">#{app.application_no}</span>

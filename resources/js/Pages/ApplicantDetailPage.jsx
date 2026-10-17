@@ -12,13 +12,30 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const { hasPermission, user } = useAuth();
     const { showToast } = useToast();
 
-    // Extract applicant ID from route (e.g. #/applicants/3)
+    // Extract applicant ID & tab from route (e.g. #/applicants/3 or #/applicants/3?tab=interviews)
+    const getTabFromRoute = (route) => {
+        if (!route) return null;
+        const queryIndex = route.indexOf('?');
+        if (queryIndex !== -1) {
+            const params = new URLSearchParams(route.substring(queryIndex));
+            return params.get('tab');
+        }
+        return null;
+    };
+
     const parts = currentRoute.split('/');
     const applicantId = parts[2] ? parts[2].split('?')[0] : null;
 
     const [applicant, setApplicant] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview'); // overview, resume, social, portfolio, interviews, emails, timeline
+    const [activeTab, setActiveTab] = useState(() => getTabFromRoute(currentRoute) || 'overview'); // overview, resume, social, portfolio, interviews, emails, timeline
+
+    useEffect(() => {
+        const tab = getTabFromRoute(currentRoute);
+        if (tab) {
+            setActiveTab(tab);
+        }
+    }, [currentRoute]);
 
     // Editing Personal Info
     const [personalForm, setPersonalForm] = useState({});
@@ -209,12 +226,27 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                     { id: 'q_3', question: 'مهارات التواصل والتفاعل والعمل الجماعي', category: 'التواصل', score: 8, max_score: 10, notes: '' },
                     { id: 'q_4', question: 'التفرغ والجاهزية للالتزام بمواعيد التسليم', category: 'الالتزام', score: 9, max_score: 10, notes: '' },
                 ]);
+            } else {
+                setActiveInterview(null);
+                setQuestionsList([]);
             }
         } catch (e) {
             showToast('تعذر العثور على المتقدم المطلوب.', 'error');
             navigate('#/applicants');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteInterview = async (interviewId) => {
+        if (!window.confirm(t('confirmDeleteInterview'))) return;
+        try {
+            await api.delete(`/api/interviews/${interviewId}`);
+            showToast(t('interviewDeletedSuccess'), 'success');
+            await loadApplicant();
+        } catch (err) {
+            console.error('Failed to delete interview', err);
+            showToast(err.message || 'فشل حذف المقابلة', 'error');
         }
     };
 
@@ -2138,7 +2170,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             )}
                                         </div>
 
-                                        {/* Calendar Export Buttons */}
+                                        {/* Calendar Export & Delete Action Buttons */}
                                         <div className="flex items-center gap-1.5 flex-wrap">
                                             <a
                                                 href={getGoogleCalendarUrl(activeInterview, applicant)}
@@ -2159,6 +2191,15 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                 <span>📥</span>
                                                 <span>{t('downloadIcsCalendar')}</span>
                                             </button>
+                                            {hasPermission('delete_interviews') && (
+                                                <IconButton
+                                                    variant="ghost"
+                                                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+                                                    onClick={() => handleDeleteInterview(activeInterview.id)}
+                                                    tooltip={t('deleteInterview')}
+                                                    icon="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 </div>
