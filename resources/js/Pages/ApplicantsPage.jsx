@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '../layouts/AppLayout';
 import PageHeader from '../components/PageHeader';
 import IconButton from '../components/IconButton';
@@ -30,8 +30,17 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [statusModalOpen, setStatusModalOpen] = useState(false);
     const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [creatingApplicant, setCreatingApplicant] = useState(false);
+    const isCreatingRef = useRef(false);
+
     const [interviewModalOpen, setInterviewModalOpen] = useState(false);
+    const [schedulingInterview, setSchedulingInterview] = useState(false);
+    const isSchedulingRef = useRef(false);
+
     const [emailModalOpen, setEmailModalOpen] = useState(false);
+    const [sendingDirectEmail, setSendingDirectEmail] = useState(false);
+    const isSendingEmailRef = useRef(false);
+
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [applicantToDelete, setApplicantToDelete] = useState(null);
     const [deletingApplicant, setDeletingApplicant] = useState(false);
@@ -182,19 +191,42 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
 
     const handleCreateApplicant = async (e) => {
         e.preventDefault();
+        if (isCreatingRef.current || creatingApplicant) return;
+        isCreatingRef.current = true;
+        setCreatingApplicant(true);
+
         try {
             await api.post('/applicants', newApplicant);
             showToast('تمت إضافة المتقدم بنجاح!', 'success');
             setCreateModalOpen(false);
+            setNewApplicant({
+                full_name: '',
+                email: '',
+                phone: '',
+                country: 'مصر',
+                city: '',
+                position: 'Full Stack Developer (Laravel & React)',
+                experience_years: 1,
+                education_level: 'بكالوريوس',
+                status: 'applicant',
+                cover_letter: '',
+                internal_notes: '',
+            });
             loadApplicants(1, activeStatus, search);
         } catch (err) {
             showToast(err.message || 'فشل إنشاء المتقدم.', 'error');
+        } finally {
+            isCreatingRef.current = false;
+            setCreatingApplicant(false);
         }
     };
 
     const handleScheduleInterview = async (e) => {
         e.preventDefault();
         if (!selectedApplicant) return;
+        if (isSchedulingRef.current || schedulingInterview) return;
+        isSchedulingRef.current = true;
+        setSchedulingInterview(true);
 
         try {
             await api.post('/interviews', {
@@ -206,12 +238,18 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
             loadApplicants(currentPage, activeStatus, search);
         } catch (err) {
             showToast(err.message || 'فشل جدولة المقابلة.', 'error');
+        } finally {
+            isSchedulingRef.current = false;
+            setSchedulingInterview(false);
         }
     };
 
     const handleSendDirectEmail = async (e) => {
         e.preventDefault();
         if (!selectedApplicant) return;
+        if (isSendingEmailRef.current || sendingDirectEmail) return;
+        isSendingEmailRef.current = true;
+        setSendingDirectEmail(true);
 
         try {
             await api.post('/emails/send', {
@@ -225,6 +263,9 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
             setEmailForm({ subject: '', body: '' });
         } catch (err) {
             showToast(err.message || 'فشل إرسال البريد.', 'error');
+        } finally {
+            isSendingEmailRef.current = false;
+            setSendingDirectEmail(false);
         }
     };
 
@@ -867,9 +908,16 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100"
+                                    disabled={creatingApplicant}
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 disabled:opacity-50 flex items-center gap-1.5"
                                 >
-                                    {t('save')}
+                                    {creatingApplicant && (
+                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    )}
+                                    <span>{creatingApplicant ? 'جاري الحفظ...' : t('save')}</span>
                                 </button>
                             </div>
                         </form>
@@ -964,9 +1012,16 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100"
+                                    disabled={schedulingInterview}
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 disabled:opacity-50 flex items-center gap-1.5"
                                 >
-                                    تأكيد الجدولة
+                                    {schedulingInterview && (
+                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    )}
+                                    <span>{schedulingInterview ? 'جاري الجدولة...' : 'تأكيد الجدولة'}</span>
                                 </button>
                             </div>
                         </form>
@@ -1035,9 +1090,16 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100"
+                                    disabled={sendingDirectEmail}
+                                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-100 disabled:opacity-50 flex items-center gap-1.5"
                                 >
-                                    {t('sendEmail')}
+                                    {sendingDirectEmail && (
+                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    )}
+                                    <span>{sendingDirectEmail ? 'جاري الإرسال...' : t('sendEmail')}</span>
                                 </button>
                             </div>
                         </form>

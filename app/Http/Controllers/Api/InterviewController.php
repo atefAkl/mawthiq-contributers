@@ -66,6 +66,18 @@ class InterviewController extends Controller
             $validated['meeting_link'] = 'https://meet.google.com/' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 3) . '-' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 4) . '-' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 3);
         }
 
+        // Prevent duplicate scheduling if submitted multiple times rapidly
+        $existing = Interview::where('applicant_id', $validated['applicant_id'])
+            ->where('scheduled_at', $validated['scheduled_at'])
+            ->where('status', 'scheduled')
+            ->first();
+        if ($existing) {
+            return response()->json([
+                'message' => 'تم جدولة هذه المقابلة بالفعل لهذا المتقدم في هذا الموعد.',
+                'interview' => $existing,
+            ], 200);
+        }
+
         $interviewerId = $validated['interviewer_id'] ?? $request->user()->id;
         $scheduledTime = Carbon::parse($validated['scheduled_at']);
 

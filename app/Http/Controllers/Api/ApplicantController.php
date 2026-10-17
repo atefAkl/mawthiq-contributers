@@ -9,7 +9,9 @@ use App\Models\AppNotification;
 use App\Models\EmailLog;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ApplicantController extends Controller
@@ -126,10 +128,17 @@ class ApplicantController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->has('email')) {
+            $request->merge(['email' => trim(strtolower($request->email))]);
+        }
+        if ($request->has('phone')) {
+            $request->merge(['phone' => trim($request->phone)]);
+        }
+
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'required|string|max:30',
+            'email' => 'required|email|max:255|unique:applicants,email',
+            'phone' => 'required|string|max:30|unique:applicants,phone',
             'national_id' => 'nullable|string|max:50',
             'country' => 'nullable|string|max:100',
             'city' => 'nullable|string|max:100',
@@ -144,40 +153,56 @@ class ApplicantController extends Controller
             'skills' => 'nullable|array',
             'availability' => 'nullable|array',
             'status' => 'required|in:applicant,participant,probation,accepted,rejected',
+        ], [
+            'email.unique' => 'البريد الإلكتروني المدخل مسجل بالفعل مسبقاً لدى متقدم آخر.',
+            'phone.unique' => 'رقم الهاتف المدخل مسجل بالفعل مسبقاً لدى متقدم آخر.',
         ]);
 
-        $year = date('Y');
-        $lastApplicant = Applicant::whereYear('created_at', $year)->latest('id')->first();
-        $nextNumber = $lastApplicant ? ((int)substr($lastApplicant->application_no, -4) + 1) : 1;
-        $appNo = sprintf("APP-%s-%04d", $year, $nextNumber);
+        return DB::transaction(function () use ($validated, $request) {
+            $year = date('Y');
+            $lastApplicant = Applicant::whereYear('created_at', $year)
+                ->lockForUpdate()
+                ->latest('id')
+                ->first();
 
-        $validated['application_no'] = $appNo;
-        $validated['created_by'] = $request->user()->id;
+            $nextNumber = $lastApplicant ? ((int)substr($lastApplicant->application_no, -4) + 1) : 1;
+            $appNo = sprintf("APP-%s-%04d", $year, $nextNumber);
 
-        $applicant = Applicant::create($validated);
+            $validated['application_no'] = $appNo;
+            $validated['created_by'] = $request->user()->id;
 
-        ApplicantStatusLog::create([
-            'applicant_id' => $applicant->id,
-            'from_status' => null,
-            'to_status' => $applicant->status,
-            'changed_by' => $request->user()->id,
-            'notes' => 'تم إنشاء الملف يدوياً من لوحة التحكم بواسطة ' . $request->user()->name,
-        ]);
+            $applicant = Applicant::create($validated);
 
-        return response()->json([
-            'message' => 'تم إضافة المتقدم بنجاح.',
-            'applicant' => $applicant,
-        ], 201);
+            ApplicantStatusLog::create([
+                'applicant_id' => $applicant->id,
+                'from_status' => null,
+                'to_status' => $applicant->status,
+                'changed_by' => $request->user()->id,
+                'notes' => 'تم إنشاء الملف يدوياً من لوحة التحكم بواسطة ' . $request->user()->name,
+            ]);
+
+            return response()->json([
+                'message' => 'تم إضافة المتقدم بنجاح.',
+                'applicant' => $applicant,
+            ], 201);
+        });
     }
 
     public function update(Request $request, $id)
     {
         $applicant = Applicant::findOrFail($id);
 
+        if ($request->has('email')) {
+            $request->merge(['email' => trim(strtolower($request->email))]);
+        }
+        if ($request->has('phone')) {
+            $request->merge(['phone' => trim($request->phone)]);
+        }
+
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'required|string|max:30',
+            'email' => ['required', 'email', 'max:255', Rule::unique('applicants', 'email')->ignore($applicant->id)],
+            'phone' => ['required', 'string', 'max:30', Rule::unique('applicants', 'phone')->ignore($applicant->id)],
             'national_id' => 'nullable|string|max:50',
             'country' => 'nullable|string|max:100',
             'city' => 'nullable|string|max:100',
@@ -201,6 +226,9 @@ class ApplicantController extends Controller
             'rating' => 'nullable',
             'skills' => 'nullable|array',
             'rejection_reason' => 'nullable|string|max:1000',
+        ], [
+            'email.unique' => 'البريد الإلكتروني المدخل مسجل بالفعل مسبقاً لدى متقدم آخر.',
+            'phone.unique' => 'رقم الهاتف المدخل مسجل بالفعل مسبقاً لدى متقدم آخر.',
         ]);
 
         // Sanitize string & nullable attributes
