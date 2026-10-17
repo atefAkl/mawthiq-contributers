@@ -367,6 +367,10 @@ export const translations = {
         alignCenter: 'محاذاة للوسط',
         alignLeft: 'محاذاة لليسار',
         smartEditorPlaceholder: 'اكتب هنا...',
+        answerWeaknesses: 'نقاط الضعف في الإجابة ومؤشرات التحذير',
+        weaknessesPlaceholder: 'مؤشرات الضعف ونقاط الخلل الشائعة التي تدل على ضعف المرشح...',
+        expectedAnswerStructure: 'هيكل الإجابة المتوقعة والنقاط الرئيسية',
+        expectedAnswerPlaceholder: 'هيكل الإجابة النموذجية والنقاط التي يجب أن يذكرها المرشح...',
     },
     en: {
         // App & Navigation (Short & Expressive)
@@ -736,5 +740,9 @@ export const translations = {
         alignCenter: 'Align Center',
         alignLeft: 'Align Left',
         smartEditorPlaceholder: 'Type here...',
+        answerWeaknesses: 'Answer Weaknesses & Red Flags',
+        weaknessesPlaceholder: 'Common weaknesses and red flags indicating candidate deficiency...',
+        expectedAnswerStructure: 'Expected Answer Structure',
+        expectedAnswerPlaceholder: 'Model answer structure and key points expected from candidate...',
     }
 };

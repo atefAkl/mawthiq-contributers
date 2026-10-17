@@ -64,10 +64,10 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
             description: '',
             is_active: true,
             questions: [
-                { id: 'q_' + Date.now() + '_1', question: '', category: 'المهارات الفنية', expected_answer: '', max_score: 25 },
-                { id: 'q_' + Date.now() + '_2', question: '', category: 'حل المشكلات', expected_answer: '', max_score: 25 },
-                { id: 'q_' + Date.now() + '_3', question: '', category: 'التواصل والعمل الجماعي', expected_answer: '', max_score: 25 },
-                { id: 'q_' + Date.now() + '_4', question: '', category: 'الالتزام والانضباط', expected_answer: '', max_score: 25 },
+                { id: 'q_' + Date.now() + '_1', question: '', category: 'المهارات الفنية', expected_answer: '', answer_weaknesses: '', max_score: 25 },
+                { id: 'q_' + Date.now() + '_2', question: '', category: 'حل المشكلات', expected_answer: '', answer_weaknesses: '', max_score: 25 },
+                { id: 'q_' + Date.now() + '_3', question: '', category: 'التواصل والعمل الجماعي', expected_answer: '', answer_weaknesses: '', max_score: 25 },
+                { id: 'q_' + Date.now() + '_4', question: '', category: 'الالتزام والانضباط', expected_answer: '', answer_weaknesses: '', max_score: 25 },
             ]
         });
         setModalOpen(true);
@@ -86,10 +86,11 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                     question: q.question || '',
                     category: q.category || 'عام',
                     expected_answer: q.expected_answer || '',
+                    answer_weaknesses: q.answer_weaknesses || '',
                     max_score: Number(q.max_score) || 10
                 }))
                 : [
-                    { id: 'q_1', question: '', category: 'عام', expected_answer: '', max_score: 10 }
+                    { id: 'q_1', question: '', category: 'عام', expected_answer: '', answer_weaknesses: '', max_score: 10 }
                 ]
         });
         setModalOpen(true);
@@ -105,6 +106,7 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                     question: '',
                     category: 'عام',
                     expected_answer: '',
+                    answer_weaknesses: '',
                     max_score: 10
                 }
             ]
@@ -386,10 +388,19 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                                                         </div>
                                                         {q.expected_answer && (
                                                             <div className="mt-2 text-[11px] bg-slate-50 text-slate-600 p-2.5 rounded border border-slate-100">
-                                                                <span className="font-bold text-slate-700 block mb-1">الإجابة / الهيكل النموذجي المتوقع:</span>
+                                                                <span className="font-bold text-slate-700 block mb-1">💡 {t('expectedAnswerStructure')}:</span>
                                                                 <div
                                                                     className="prose prose-xs max-w-none text-slate-700 leading-relaxed [&_h3]:font-bold [&_h3]:text-slate-900 [&_h4]:font-bold [&_h4]:text-slate-800 [&_ul]:list-disc [&_ul]:ps-4 [&_ol]:list-decimal [&_ol]:ps-4"
                                                                     dangerouslySetInnerHTML={{ __html: q.expected_answer }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        {q.answer_weaknesses && (
+                                                            <div className="mt-2 text-[11px] bg-rose-50/70 text-rose-800 p-2.5 rounded border border-rose-100">
+                                                                <span className="font-bold text-rose-800 block mb-1">⚠️ {t('answerWeaknesses')}:</span>
+                                                                <div
+                                                                    className="prose prose-xs max-w-none text-rose-800 leading-relaxed [&_h3]:font-bold [&_h3]:text-rose-950 [&_h4]:font-bold [&_h4]:text-rose-900 [&_ul]:list-disc [&_ul]:ps-4 [&_ol]:list-decimal [&_ol]:ps-4"
+                                                                    dangerouslySetInnerHTML={{ __html: q.answer_weaknesses }}
                                                                 />
                                                             </div>
                                                         )}
@@ -550,16 +561,32 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                                                     </div>
                                                 </div>
 
-                                                <div>
-                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                                                        هيكل الإجابة المتوقعة والنقاط الرئيسية:
-                                                    </label>
-                                                    <SmartEditor
-                                                        value={q.expected_answer || ''}
-                                                        onChange={(val) => handleQuestionChange(idx, 'expected_answer', val)}
-                                                        placeholder="هيكل الإجابة المتوقعة والنقاط الرئيسية التي يبحث عنها المحكّم في الإجابة..."
-                                                        minHeight="85px"
-                                                    />
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                                                            <span className="w-4 h-4 rounded bg-blue-50 text-blue-600 flex items-center justify-center text-[10px]">💡</span>
+                                                            <span>{t('expectedAnswerStructure')}</span>
+                                                        </label>
+                                                        <SmartEditor
+                                                            value={q.expected_answer || ''}
+                                                            onChange={(val) => handleQuestionChange(idx, 'expected_answer', val)}
+                                                            placeholder={t('expectedAnswerPlaceholder')}
+                                                            minHeight="80px"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-[11px] font-bold text-rose-700 mb-1 flex items-center gap-1.5">
+                                                            <span className="w-4 h-4 rounded bg-rose-50 text-rose-600 flex items-center justify-center text-[10px]">⚠️</span>
+                                                            <span>{t('answerWeaknesses')}</span>
+                                                        </label>
+                                                        <SmartEditor
+                                                            value={q.answer_weaknesses || ''}
+                                                            onChange={(val) => handleQuestionChange(idx, 'answer_weaknesses', val)}
+                                                            placeholder={t('weaknessesPlaceholder')}
+                                                            minHeight="80px"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}

@@ -2300,6 +2300,19 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                             </div>
                                                         )}
 
+                                                        {/* Weakness Indicators & Red Flags Guide (ADR-010) */}
+                                                        {q.answer_weaknesses && (
+                                                            <div className="text-[11px] bg-rose-50/60 border border-rose-100 text-rose-900 p-2.5 rounded-xl leading-relaxed">
+                                                                <span className="font-bold text-rose-800 block mb-0.5">
+                                                                    ⚠️ {t('answerWeaknesses')}:
+                                                                </span>
+                                                                <div
+                                                                    className="prose prose-xs max-w-none text-rose-900 leading-relaxed [&_h3]:font-bold [&_h3]:text-rose-950 [&_h4]:font-bold [&_h4]:text-rose-900 [&_ul]:list-disc [&_ul]:ps-4 [&_ol]:list-decimal [&_ol]:ps-4"
+                                                                    dangerouslySetInnerHTML={{ __html: q.answer_weaknesses }}
+                                                                />
+                                                            </div>
+                                                        )}
+
                                                         {/* Score Slider & Direct Input */}
                                                         <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl">
                                                             <span className="text-[11px] font-bold text-slate-500 whitespace-nowrap">{t('interviewerScore')}:</span>

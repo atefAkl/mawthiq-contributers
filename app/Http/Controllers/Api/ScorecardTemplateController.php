@@ -58,7 +58,8 @@ class ScorecardTemplateController extends Controller
             'questions.*.id' => 'nullable|string',
             'questions.*.question' => 'required|string|max:500',
             'questions.*.category' => 'nullable|string|max:100',
-            'questions.*.expected_answer' => 'nullable|string|max:2000',
+            'questions.*.expected_answer' => 'nullable|string|max:5000',
+            'questions.*.answer_weaknesses' => 'nullable|string|max:5000',
             'questions.*.max_score' => 'required|numeric|min:1|max:500',
             'is_active' => 'nullable|boolean',
         ]);
@@ -74,6 +75,7 @@ class ScorecardTemplateController extends Controller
                 'question' => trim($q['question']),
                 'category' => !empty($q['category']) ? trim($q['category']) : 'عام',
                 'expected_answer' => $q['expected_answer'] ?? '',
+                'answer_weaknesses' => $q['answer_weaknesses'] ?? '',
                 'max_score' => (float)$q['max_score'],
             ];
         }, $validated['questions'], array_keys($validated['questions']));
@@ -116,7 +118,8 @@ class ScorecardTemplateController extends Controller
             'questions.*.id' => 'nullable|string',
             'questions.*.question' => 'required|string|max:500',
             'questions.*.category' => 'nullable|string|max:100',
-            'questions.*.expected_answer' => 'nullable|string|max:2000',
+            'questions.*.expected_answer' => 'nullable|string|max:5000',
+            'questions.*.answer_weaknesses' => 'nullable|string|max:5000',
             'questions.*.max_score' => 'required|numeric|min:1|max:500',
             'is_active' => 'nullable|boolean',
         ]);
@@ -130,6 +133,7 @@ class ScorecardTemplateController extends Controller
                 'question' => trim($q['question']),
                 'category' => !empty($q['category']) ? trim($q['category']) : 'عام',
                 'expected_answer' => $q['expected_answer'] ?? '',
+                'answer_weaknesses' => $q['answer_weaknesses'] ?? '',
                 'max_score' => (float)$q['max_score'],
             ];
         }, $validated['questions'], array_keys($validated['questions']));

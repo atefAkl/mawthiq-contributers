@@ -114,6 +114,7 @@ class InterviewController extends Controller
                         'question' => $q['question'],
                         'category' => $q['category'] ?? 'عام',
                         'expected_answer' => $q['expected_answer'] ?? '',
+                        'answer_weaknesses' => $q['answer_weaknesses'] ?? '',
                         'max_score' => (float)($q['max_score'] ?? 10),
                         'score' => null,
                         'notes' => '',
