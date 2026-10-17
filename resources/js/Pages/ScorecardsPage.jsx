@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AppLayout from '../layouts/AppLayout';
 import PageHeader from '../components/PageHeader';
 import IconButton from '../components/IconButton';
+import SmartEditor from '../components/SmartEditor';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -384,9 +385,12 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                                                             </div>
                                                         </div>
                                                         {q.expected_answer && (
-                                                            <div className="mt-2 text-[11px] bg-slate-50 text-slate-600 p-2 rounded border border-slate-100">
-                                                                <span className="font-bold text-slate-700 block mb-0.5">الإجابة / الهيكل النموذجي المتوقع:</span>
-                                                                {q.expected_answer}
+                                                            <div className="mt-2 text-[11px] bg-slate-50 text-slate-600 p-2.5 rounded border border-slate-100">
+                                                                <span className="font-bold text-slate-700 block mb-1">الإجابة / الهيكل النموذجي المتوقع:</span>
+                                                                <div
+                                                                    className="prose prose-xs max-w-none text-slate-700 leading-relaxed [&_h3]:font-bold [&_h3]:text-slate-900 [&_h4]:font-bold [&_h4]:text-slate-800 [&_ul]:list-disc [&_ul]:ps-4 [&_ol]:list-decimal [&_ol]:ps-4"
+                                                                    dangerouslySetInnerHTML={{ __html: q.expected_answer }}
+                                                                />
                                                             </div>
                                                         )}
                                                     </div>
@@ -547,12 +551,14 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                                                 </div>
 
                                                 <div>
-                                                    <textarea
-                                                        rows={2}
+                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                                        هيكل الإجابة المتوقعة والنقاط الرئيسية:
+                                                    </label>
+                                                    <SmartEditor
+                                                        value={q.expected_answer || ''}
+                                                        onChange={(val) => handleQuestionChange(idx, 'expected_answer', val)}
                                                         placeholder="هيكل الإجابة المتوقعة والنقاط الرئيسية التي يبحث عنها المحكّم في الإجابة..."
-                                                        value={q.expected_answer}
-                                                        onChange={(e) => handleQuestionChange(idx, 'expected_answer', e.target.value)}
-                                                        className="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-600 text-slate-700"
+                                                        minHeight="85px"
                                                     />
                                                 </div>
                                             </div>

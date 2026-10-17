@@ -2293,7 +2293,10 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                                 <span className="font-bold text-blue-800 block mb-0.5">
                                                                     💡 {t('expectedAnswer')}:
                                                                 </span>
-                                                                {q.expected_answer}
+                                                                <div
+                                                                    className="prose prose-xs max-w-none text-blue-900 leading-relaxed [&_h3]:font-bold [&_h3]:text-blue-950 [&_h4]:font-bold [&_h4]:text-blue-900 [&_ul]:list-disc [&_ul]:ps-4 [&_ol]:list-decimal [&_ol]:ps-4"
+                                                                    dangerouslySetInnerHTML={{ __html: q.expected_answer }}
+                                                                />
                                                             </div>
                                                         )}
 

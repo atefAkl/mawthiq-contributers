@@ -357,6 +357,16 @@ export const translations = {
         availabilityStatus: 'حالة التفرغ',
         hasAvailabilityBadge: 'تفرغ محدد',
         noAvailabilityBadge: 'بدون تفرغ',
+        bold: 'خط عريض',
+        normalText: 'نص عادي',
+        headingMain: 'عنوان رئيسي',
+        headingSub: 'عنوان ثانوي',
+        orderedList: 'قائمة مرقمة',
+        unorderedList: 'قائمة نقطية',
+        alignRight: 'محاذاة لليمين',
+        alignCenter: 'محاذاة للوسط',
+        alignLeft: 'محاذاة لليسار',
+        smartEditorPlaceholder: 'اكتب هنا...',
     },
     en: {
         // App & Navigation (Short & Expressive)
@@ -716,5 +726,15 @@ export const translations = {
         availabilityStatus: 'Availability Status',
         hasAvailabilityBadge: 'Availability Set',
         noAvailabilityBadge: 'No Availability',
+        bold: 'Bold',
+        normalText: 'Normal Text',
+        headingMain: 'Main Heading',
+        headingSub: 'Sub Heading',
+        orderedList: 'Numbered List',
+        unorderedList: 'Bullet List',
+        alignRight: 'Align Right',
+        alignCenter: 'Align Center',
+        alignLeft: 'Align Left',
+        smartEditorPlaceholder: 'Type here...',
     }
 };
