@@ -204,3 +204,22 @@
      - [UsersAndPermissionsPage.jsx](file:///c:/laragon/www/mawthiq-contributers/resources/js/Pages/UsersAndPermissionsPage.jsx)
      - [SettingsPage.jsx](file:///c:/laragon/www/mawthiq-contributers/resources/js/Pages/SettingsPage.jsx)
      - [ProfilePage.jsx](file:///c:/laragon/www/mawthiq-contributers/resources/js/Pages/ProfilePage.jsx)
+
+---
+
+## [2026-10-17] - منع تكرار إضافة السجلات وقفل التقديم المزدوج (Idempotency & Deduplication)
+- **الفرع (Branch):** `main`
+- **ما تم إنجازه:**
+  1. **قاعدة البيانات والقيود الفريدة (Unique Constraints):**
+     - إنشاء وتشغيل الميجريشن `2026_10_15_203000_add_unique_constraints_to_applicants_table.php` لإضافة فهارس فريدة صارمة (`unique index`) لكل من البريد الإلكتروني (`email`) ورقم الهاتف (`phone`) في جدول `applicants`.
+  2. **حماية التزامن والقفل الذري (Atomic Concurrency Lock & Idempotency):**
+     - في `PublicApplyController.php`: تنظيف وتوحيد البريد والهاتف، تفعيل التحقق `unique:applicants,email` و `unique:applicants,phone` مع رسائل عربية واضحة، وإضافة قفل ذري عبر `Cache::lock` لمنع مرور النقرات المتزامنة السريعة، وتوليد رقم الطلب `application_no` داخل `DB::transaction` مع `lockForUpdate`.
+     - في `ApplicantController.php`: حماية دالتي `store` و `update` بنفس قيود الفردية وتوليد رقم الطلب الآمن.
+     - في `InterviewController.php`: فحص ومنع تكرار جدولة المقابلة لنفس المتقدم في نفس التوقيت عند النقر المتكرر.
+  3. **حماية الواجهات الأمامية ومنع النقرات المتكررة (Button Debouncing & Loading Guard):**
+     - في `PublicApplyPage.jsx`: قفل متزامن عبر `isSubmittingRef` وتعطيل زر التقديم فور النقر مع مؤشر دوران وعرض نص `"جاري إرسال البيانات والتحقق... برجاء الانتظار"`.
+     - في `ApplicantsPage.jsx`: حماية نوافذ الإضافة والجدولة والإرسال المباشر بقفل متزامن ومؤشرات تحميل وتعطيل الأزرار أثناء المعالجة لمنع تكرار السجلات.
+  4. **دمج التحديثات والرفع:**
+     - دمج ومزامنة كافة التحديثات السابقة من الريموت (شاملة بطاقات التقييم وتوافق أوقات المقابلات) مع كود منع التكرار بدون أي تعارض.
+     - رفع التحديثات إلى المستودع البعيد `origin/main`.
+     - إعادة بناء الواجهة وتجهيز حزمة التحديث الجاهزة `contributors_update_no_env.zip` بصلاحيات POSIX كاملة.
