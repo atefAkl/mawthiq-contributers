@@ -81,12 +81,12 @@ class InterviewController extends Controller
         $interviewerId = $validated['interviewer_id'] ?? $request->user()->id;
         $scheduledTime = Carbon::parse($validated['scheduled_at']);
 
-        // Prevent double booking conflicts (within 40 minutes) unless explicitly forced
+        // Prevent double booking conflicts (within 25 minutes active interview unit) unless explicitly forced
         $conflict = Interview::where('interviewer_id', $interviewerId)
             ->where('status', 'scheduled')
             ->whereBetween('scheduled_at', [
-                $scheduledTime->copy()->subMinutes(40),
-                $scheduledTime->copy()->addMinutes(40),
+                $scheduledTime->copy()->subMinutes(25),
+                $scheduledTime->copy()->addMinutes(25),
             ])
             ->with('applicant:id,full_name,application_no')
             ->first();
@@ -152,7 +152,8 @@ class InterviewController extends Controller
         // Send email invitation log
         if ($applicant && $request->boolean('send_invitation_email', true)) {
             $dateFormatted = Carbon::parse($validated['scheduled_at'])->format('Y-m-d H:i');
-            $body = "عزيزي {$applicant->full_name}،\n\nيسعدنا إبلاغك بتحديد موعد مقابلتك الشخصية لوظيفة ({$applicant->position}).\nالموعد: {$dateFormatted}\nنوع المقابلة: " . ($validated['interview_type'] === 'online' ? 'عبر الإنترنت (أونلاين)' : 'حضورياً') . "\n";
+            $endTimeFormatted = Carbon::parse($validated['scheduled_at'])->addMinutes(25)->format('H:i');
+            $body = "عزيزي {$applicant->full_name}،\n\nيسعدنا إبلاغك بتحديد موعد مقابلتك الشخصية لوظيفة ({$applicant->position}).\nالموعد: {$dateFormatted} (إلى {$endTimeFormatted})\nالمدة: 25 دقيقة نشطة\nنوع المقابلة: " . ($validated['interview_type'] === 'online' ? 'عبر الإنترنت (أونلاين)' : 'حضورياً') . "\n";
             if (!empty($validated['meeting_link'])) {
                 $body .= "رابط المقابلة: {$validated['meeting_link']}\n";
             }
@@ -390,7 +391,7 @@ class InterviewController extends Controller
         $interviewer = \App\Models\User::findOrFail($interviewerId);
 
         $daysAhead = (int)$request->input('days_ahead', 14);
-        $slotDuration = (int)$request->input('slot_duration', 45);
+        $slotDuration = (int)$request->input('slot_duration', 25);
 
         $applicantWindows = $applicant->getAvailabilityWindows();
         $interviewerHours = $interviewer->getWorkingHoursOrDefault();

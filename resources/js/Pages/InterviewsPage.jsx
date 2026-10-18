@@ -98,7 +98,7 @@ export default function InterviewsPage({ currentRoute, navigate }) {
         const applicantName = item.applicant?.full_name || 'متقدم';
         const title = encodeURIComponent(`مقابلة توظيف: ${applicantName} (${item.applicant?.position || 'مساهم'})`);
         const start = new Date(item.scheduled_at);
-        const end = new Date(start.getTime() + 45 * 60 * 1000);
+        const end = new Date(start.getTime() + 25 * 60 * 1000);
         const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
         const dates = `${formatUtc(start)}/${formatUtc(end)}`;
         const details = encodeURIComponent(`مقابلة المرشح ${applicantName}\nرقم الطلب: ${item.applicant?.application_no || ''}\nرابط المقابلة: ${item.meeting_link || ''}`);
@@ -110,7 +110,7 @@ export default function InterviewsPage({ currentRoute, navigate }) {
         if (!item || !item.scheduled_at) return;
         const applicantName = item.applicant?.full_name || 'applicant';
         const start = new Date(item.scheduled_at);
-        const end = new Date(start.getTime() + 45 * 60 * 1000);
+        const end = new Date(start.getTime() + 25 * 60 * 1000);
         const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
         const icsContent = [
             'BEGIN:VCALENDAR',

@@ -90,12 +90,12 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const [conflictWarning, setConflictWarning] = useState(null);
     const [schedulingLoading, setSchedulingLoading] = useState(false);
 
-    // Google Calendar & iCalendar (.ics) integration helpers (ADR-010)
+    // Google Calendar & iCalendar (.ics) integration helpers (25-min active interview unit)
     const getGoogleCalendarUrl = (interview, app) => {
         if (!interview || !interview.scheduled_at || !app) return '#';
         const title = encodeURIComponent(`مقابلة توظيف: ${app.full_name} (${app.position || 'مساهم'})`);
         const start = new Date(interview.scheduled_at);
-        const end = new Date(start.getTime() + 45 * 60 * 1000);
+        const end = new Date(start.getTime() + 25 * 60 * 1000);
         const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
         const dates = `${formatUtc(start)}/${formatUtc(end)}`;
         const details = encodeURIComponent(`مقابلة المرشح: ${app.full_name}\nرقم الطلب: ${app.application_no}\nرابط الاجتماع: ${interview.meeting_link || ''}\nنوع المقابلة: ${interview.interview_type === 'online' ? 'أونلاين' : 'حضوري'}`);
@@ -106,7 +106,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const downloadIcsFile = (interview, app) => {
         if (!interview || !interview.scheduled_at || !app) return;
         const start = new Date(interview.scheduled_at);
-        const end = new Date(start.getTime() + 45 * 60 * 1000);
+        const end = new Date(start.getTime() + 25 * 60 * 1000);
         const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
         const icsContent = [
             'BEGIN:VCALENDAR',
@@ -135,6 +135,26 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         link.click();
         document.body.removeChild(link);
         showToast('تم تحميل ملف التقويم (.ics) للتنبيهات بنجاح.', 'success');
+    };
+
+    // Calculate 25-minute interview duration from scheduled start time
+    const getInterviewDurationInfo = (scheduledAt) => {
+        if (!scheduledAt) return null;
+        const start = new Date(scheduledAt);
+        if (isNaN(start.getTime())) return null;
+        const end = new Date(start.getTime() + 25 * 60 * 1000);
+        const formatTime = (d) => {
+            let h = d.getHours();
+            const m = String(d.getMinutes()).padStart(2, '0');
+            const period = h >= 12 ? 'م' : 'ص';
+            h = h % 12 || 12;
+            return `${h}:${m} ${period}`;
+        };
+        return {
+            startText: formatTime(start),
+            endText: formatTime(end),
+            dateText: start.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }),
+        };
     };
 
     // Post-Interview Decision & Response Email Modal
@@ -2124,10 +2144,12 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                         {t(`interview_${activeInterview.status}`) || activeInterview.status}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                                                <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 flex-wrap">
                                                     <span>المحكّم: <strong className="text-slate-700">{activeInterview.interviewer?.name || 'غير محدد'}</strong></span>
                                                     <span>&bull;</span>
                                                     <span>النوع: <strong className="text-slate-700">{activeInterview.interview_type === 'online' ? 'عبر الإنترنت (أونلاين)' : 'حضورياً'}</strong></span>
+                                                    <span>&bull;</span>
+                                                    <span>المدة: <strong className="text-emerald-700">25 دقيقة نشطة</strong> (إلى {new Date(new Date(activeInterview.scheduled_at).getTime() + 25 * 60 * 1000).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })})</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2616,20 +2638,15 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                             </button>
                         </div>
 
-                        {/* Dynamic Smart Matching & Intersection Box */}
+                        {/* Reference Box: Weekly Availability & Duty Hours */}
                         <div className="mb-4 p-4 rounded-2xl border border-blue-200/80 bg-gradient-to-b from-blue-50/70 to-slate-50 space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
-                                    <span>⚡</span> {t('smartMatchingIntersection')}
+                                    <span>⚡</span> {t('candidateAvailabilitySummary')} و {t('interviewerDutyHours')}
                                 </span>
-                                <button
-                                    type="button"
-                                    onClick={fetchAvailableSlots}
-                                    disabled={loadingSlots}
-                                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800 disabled:opacity-50 cursor-pointer flex items-center gap-1"
-                                >
-                                    <span>🔄</span> {loadingSlots ? t('loading') : t('refreshSuggestedSlots')}
-                                </button>
+                                <span className="text-[10px] text-blue-700 bg-blue-100/60 font-semibold px-2 py-0.5 rounded-full">
+                                    مرجع أسبوعي دوري
+                                </span>
                             </div>
 
                             {/* Candidate Availability & Duty Hours Chips */}
@@ -2698,43 +2715,6 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                     )}
                                 </div>
                             </div>
-
-                            {/* Suggested Slots from Intersection */}
-                            <div className="pt-2 border-t border-blue-100">
-                                <p className="text-[11px] font-bold text-blue-900 mb-2">
-                                    {t('selectAvailableSlotPrompt')}
-                                </p>
-
-                                {loadingSlots ? (
-                                    <div className="py-4 text-center text-xs text-blue-600 font-semibold animate-pulse">
-                                        جاري احتساب التقاطع واستبعاد المواعيد المحجوزة...
-                                    </div>
-                                ) : matchingSlots.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
-                                        {matchingSlots.map((slot, idx) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => {
-                                                    setScheduleForm({ ...scheduleForm, scheduled_at: slot.datetime });
-                                                    if (conflictWarning) setConflictWarning(null);
-                                                }}
-                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                                                    scheduleForm.scheduled_at === slot.datetime
-                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                                                        : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'
-                                                }`}
-                                            >
-                                                {slot.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
-                                        {t('noMatchingSlotsFound')}
-                                    </div>
-                                )}
-                            </div>
                         </div>
 
                         {/* Conflict Warning Alert Box */}
@@ -2761,7 +2741,12 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
                         <form onSubmit={handleScheduleInterview} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">{t('scheduledAt')} *</label>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    {t('scheduledAt')} *
+                                    <span className="text-[11px] font-normal text-slate-500 ms-1.5">
+                                        (اختر تاريخ ووقت بدء المقابلة بحرية تامة)
+                                    </span>
+                                </label>
                                 <input
                                     type="datetime-local"
                                     required
@@ -2770,8 +2755,33 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         setScheduleForm({ ...scheduleForm, scheduled_at: e.target.value });
                                         if (conflictWarning) setConflictWarning(null);
                                     }}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                 />
+
+                                {/* Auto-Calculated 25-Minute Interview Window Box */}
+                                {scheduleForm.scheduled_at && (() => {
+                                    const info = getInterviewDurationInfo(scheduleForm.scheduled_at);
+                                    if (!info) return null;
+                                    return (
+                                        <div className="mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex flex-wrap items-center justify-between gap-2 animate-in fade-in">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-base">⏱️</span>
+                                                <div>
+                                                    <span className="font-bold">فترة المقابلة المحسوبة:</span>
+                                                    <span className="mx-1.5 font-black text-emerald-800 text-[13px]">
+                                                        من {info.startText} إلى {info.endText}
+                                                    </span>
+                                                    <span className="text-slate-500 text-[11px] block sm:inline">
+                                                        ({info.dateText})
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] bg-emerald-200/80 text-emerald-950 font-black px-2.5 py-1 rounded-md shrink-0">
+                                                25 دقيقة نشطة
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">{t('interviewType')}</label>
