@@ -35,6 +35,9 @@
      - كتابة وتمرير 5 اختبارات ميزة في `tests/Feature/CountryAndInterviewTest.php` تغطي جلب الدول والمدن، التحويل الآلي للمقابلات الفائتة، تعديل الموعد وإعادة الجدولة، الإلغاء مع سبب، وحفظ مفتاح الاتصال بنسبة نجاح 100% (275 تأكيداً).
      - اجتياز اختبارات `ScorecardTemplateTest.php` بالكامل (4 اختبارات، 21 تأكيداً).
      - تنفيذ بناء أصول الإنتاج `npm run build` بنجاح كامل في 1.02 ثانية.
+  6. **تحصين ترحيلات قاعدة البيانات (Idempotent Database Migrations):**
+     - تحديث ترحيل القيود الفريدة `2026_10_15_203000_add_unique_constraints_to_applicants_table.php` بفحص `Schema::hasIndex` قبل محاولة إنشاء الفهارس `applicants_email_unique` و `applicants_phone_unique` لحل خطأ `1061 Duplicate key name` على الاستضافة الحية فوراً.
+     - تحصين ترحيلات `availability` و `working_hours` و `scorecard_templates` بفحوصات `Schema::hasColumn` و `Schema::hasTable` لمنع أي تعثرات مستقبلية.
 
 ---
 

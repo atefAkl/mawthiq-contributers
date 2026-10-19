@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('applicants', function (Blueprint $table) {
-            $table->unique('email', 'applicants_email_unique');
-            $table->unique('phone', 'applicants_phone_unique');
+            if (!Schema::hasIndex('applicants', 'applicants_email_unique')) {
+                $table->unique('email', 'applicants_email_unique');
+            }
+            if (!Schema::hasIndex('applicants', 'applicants_phone_unique')) {
+                $table->unique('phone', 'applicants_phone_unique');
+            }
         });
     }
 
@@ -23,8 +27,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('applicants', function (Blueprint $table) {
-            $table->dropUnique('applicants_email_unique');
-            $table->dropUnique('applicants_phone_unique');
+            if (Schema::hasIndex('applicants', 'applicants_email_unique')) {
+                $table->dropUnique('applicants_email_unique');
+            }
+            if (Schema::hasIndex('applicants', 'applicants_phone_unique')) {
+                $table->dropUnique('applicants_phone_unique');
+            }
         });
     }
 };

@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->json('working_hours')->nullable()->after('locale');
+            if (!Schema::hasColumn('users', 'working_hours')) {
+                $table->json('working_hours')->nullable()->after('locale');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('working_hours');
+            if (Schema::hasColumn('users', 'working_hours')) {
+                $table->dropColumn('working_hours');
+            }
         });
     }
 };
