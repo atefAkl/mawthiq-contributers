@@ -16,6 +16,12 @@ class InterviewController extends Controller
 {
     public function index(Request $request)
     {
+        // Auto-detect and transition past scheduled interviews (> 25 min window) to 'missed'
+        $pastCutoff = Carbon::now()->subMinutes(25);
+        Interview::where('status', 'scheduled')
+            ->where('scheduled_at', '<', $pastCutoff)
+            ->update(['status' => 'missed']);
+
         $query = Interview::with(['applicant', 'interviewer', 'scorecardTemplate'])->orderBy('scheduled_at', 'desc');
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -35,6 +41,7 @@ class InterviewController extends Controller
         $stats = [
             'total' => Interview::count(),
             'scheduled' => Interview::where('status', 'scheduled')->count(),
+            'missed' => Interview::where('status', 'missed')->count(),
             'completed' => Interview::where('status', 'completed')->count(),
             'cancelled' => Interview::where('status', 'cancelled')->count(),
         ];
@@ -261,19 +268,142 @@ class InterviewController extends Controller
 
     public function update(Request $request, $id)
     {
-        $interview = Interview::findOrFail($id);
+        $interview = Interview::with('applicant')->findOrFail($id);
 
         $validated = $request->validate([
-            'scheduled_at' => 'required|date',
-            'interview_type' => 'required|in:online,in_person,phone',
+            'scheduled_at' => 'nullable|date',
+            'interview_type' => 'nullable|in:online,in_person,phone',
             'meeting_link' => 'nullable|url',
             'location' => 'nullable|string|max:255',
             'interviewer_id' => 'nullable|exists:users,id',
-            'scorecard_template_id' => 'nullable|exists:scorecard_templates,id',
-            'status' => 'required|in:scheduled,completed,cancelled,rescheduled',
+            'scorecard_template_id' => 'nullable',
+            'status' => 'nullable|in:scheduled,completed,cancelled,rescheduled,missed',
+            'feedback' => 'nullable|string|max:2000',
+            'cancellation_reason' => 'nullable|string|max:1000',
+            'send_update_email' => 'nullable|boolean',
+            'send_cancellation_email' => 'nullable|boolean',
+            'force_conflict' => 'nullable|boolean',
         ]);
 
+        // Prevent modifying scheduled_at if already completed
+        if ($interview->status === 'completed' && isset($validated['scheduled_at']) && $validated['scheduled_at'] != $interview->scheduled_at) {
+            return response()->json([
+                'message' => 'لا يمكن تعديل موعد مقابلة مكتملة تم رصد نتائجها مسبقاً.',
+            ], 422);
+        }
+
+        // Auto-generate meeting link if empty and online
+        if (($validated['interview_type'] ?? $interview->interview_type) === 'online' && empty($validated['meeting_link']) && empty($interview->meeting_link)) {
+            $validated['meeting_link'] = 'https://meet.google.com/' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 3) . '-' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 4) . '-' . substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 3);
+        }
+
+        // Check for double booking conflict if schedule or interviewer changes
+        if (isset($validated['scheduled_at'])) {
+            $interviewerId = $validated['interviewer_id'] ?? $interview->interviewer_id;
+            $scheduledTime = Carbon::parse($validated['scheduled_at']);
+
+            // If rescheduling to a future time from 'missed', auto-restore status to 'scheduled'
+            if ($scheduledTime->isFuture() && in_array($interview->status, ['missed', 'scheduled'])) {
+                $validated['status'] = 'scheduled';
+            }
+
+            $conflict = Interview::where('id', '!=', $interview->id)
+                ->where('interviewer_id', $interviewerId)
+                ->where('status', 'scheduled')
+                ->whereBetween('scheduled_at', [
+                    $scheduledTime->copy()->subMinutes(25),
+                    $scheduledTime->copy()->addMinutes(25),
+                ])
+                ->with('applicant:id,full_name,application_no')
+                ->first();
+
+            if ($conflict && !$request->boolean('force_conflict', false)) {
+                $conflictName = $conflict->applicant->full_name ?? 'متقدم آخر';
+                $conflictTime = $conflict->scheduled_at ? $conflict->scheduled_at->format('Y-m-d H:i') : '';
+                return response()->json([
+                    'message' => "تنبيه: يوجد تضارب في المواعيد! المحكّم لديه مقابلة أخرى مجدولة بالفعل مع ({$conflictName}) في توقيت متقارب ({$conflictTime}). يمكنك اختيار موعد آخر أو تأكيد الحفظ على أي حال.",
+                    'has_conflict' => true,
+                    'conflict_time' => $conflictTime,
+                ], 422);
+            }
+        }
+
+        // Synchronize scorecard template questions if changed
+        if (array_key_exists('scorecard_template_id', $validated)) {
+            $newTemplateId = $validated['scorecard_template_id'];
+            if (!empty($newTemplateId) && $newTemplateId != $interview->scorecard_template_id) {
+                $template = ScorecardTemplate::find($newTemplateId);
+                if ($template && is_array($template->questions)) {
+                    $validated['max_score'] = $template->total_max_score;
+                    $validated['questions'] = array_map(function ($q, $index) {
+                        return [
+                            'id' => $q['id'] ?? ('q_' . ($index + 1)),
+                            'question' => $q['question'],
+                            'category' => $q['category'] ?? 'عام',
+                            'expected_answer' => $q['expected_answer'] ?? '',
+                            'answer_weaknesses' => $q['answer_weaknesses'] ?? '',
+                            'max_score' => (float)($q['max_score'] ?? 10),
+                            'score' => null,
+                            'notes' => '',
+                        ];
+                    }, $template->questions, array_keys($template->questions));
+                }
+            } elseif (empty($newTemplateId)) {
+                $validated['scorecard_template_id'] = null;
+                $validated['max_score'] = null;
+                $validated['questions'] = null;
+            }
+        }
+
+        $oldStatus = $interview->status;
         $interview->update($validated);
+
+        $applicant = $interview->applicant;
+
+        // Send email update to candidate if requested
+        if ($request->boolean('send_update_email', false) && $applicant && $applicant->email) {
+            $scheduledCarbon = Carbon::parse($interview->scheduled_at)->setTimezone('Asia/Riyadh');
+            $dateFormatted = $scheduledCarbon->format('Y-m-d H:i');
+            $endTimeFormatted = $scheduledCarbon->copy()->addMinutes(25)->format('H:i');
+            $body = "عزيزي {$applicant->full_name}،\n\nنود إبلاغك بتحديث موعد وبيانات مقابلتك الشخصية لوظيفة ({$applicant->position}).\nالموعد المحدّث: {$dateFormatted} (إلى {$endTimeFormatted}) بتوقيت الشرق الأوسط (الرياض - GMT+3)\nالمدة: 25 دقيقة نشطة\nنوع المقابلة: " . ($interview->interview_type === 'online' ? 'عبر الإنترنت (أونلاين)' : 'حضورياً') . "\n";
+            if (!empty($interview->meeting_link)) {
+                $body .= "رابط المقابلة: {$interview->meeting_link}\n";
+            }
+            if (!empty($interview->location)) {
+                $body .= "المكان: {$interview->location}\n";
+            }
+            $body .= "\nيرجى التواجد في الموعد المحدد.\nفريق العمل";
+
+            EmailLog::create([
+                'applicant_id' => $applicant->id,
+                'sender_email' => Setting::get('mail_from_address', 'recruitment@contributors.app'),
+                'recipient_email' => $applicant->email,
+                'subject' => "تحديث موعد المقابلة الشخصية [{$applicant->application_no}]",
+                'body' => $body,
+                'type' => 'sent',
+                'status' => 'delivered',
+                'template_name' => 'interview_update',
+                'sent_by' => $request->user()->id,
+            ]);
+        }
+
+        // Send cancellation email if status transitioned to cancelled
+        if (isset($validated['status']) && $validated['status'] === 'cancelled' && $oldStatus !== 'cancelled' && $request->boolean('send_cancellation_email', false) && $applicant && $applicant->email) {
+            $reasonText = !empty($validated['cancellation_reason']) ? "\nسبب الإلغاء: " . $validated['cancellation_reason'] : '';
+            $body = "عزيزي {$applicant->full_name}،\n\nنود إبلاغك بأنه قد تم إلغاء موعد المقابلة الشخصية المحددة سابقاً لوظيفة ({$applicant->position}).{$reasonText}\n\nسيتم التواصل معك في حال تحديد موعد بديل.\nفريق العمل";
+
+            EmailLog::create([
+                'applicant_id' => $applicant->id,
+                'sender_email' => Setting::get('mail_from_address', 'recruitment@contributors.app'),
+                'recipient_email' => $applicant->email,
+                'subject' => "إلغاء موعد المقابلة الشخصية [{$applicant->application_no}]",
+                'body' => $body,
+                'type' => 'sent',
+                'status' => 'delivered',
+                'template_name' => 'interview_cancellation',
+                'sent_by' => $request->user()->id,
+            ]);
+        }
 
         return response()->json([
             'message' => 'تم تعديل بيانات المقابلة بنجاح.',

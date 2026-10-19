@@ -29,6 +29,7 @@ class Interview extends Model
         'total_score',
         'max_score',
         'overall_percentage',
+        'cancellation_reason',
     ];
 
     protected $casts = [

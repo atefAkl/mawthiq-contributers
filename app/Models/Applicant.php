@@ -14,6 +14,7 @@ class Applicant extends Model
         'full_name',
         'email',
         'phone',
+        'phone_code',
         'national_id',
         'age',
         'birth_date',

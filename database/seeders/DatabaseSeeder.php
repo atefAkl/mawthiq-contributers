@@ -518,5 +518,8 @@ class DatabaseSeeder extends Seeder
             'action_url' => '/interviews',
             'is_read' => false,
         ]);
+
+        // 7. Seed Countries and Cities
+        $this->call(CountryAndCitySeeder::class);
     }
 }

@@ -91,6 +91,137 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const [conflictWarning, setConflictWarning] = useState(null);
     const [schedulingLoading, setSchedulingLoading] = useState(false);
 
+    // Countries, Cities, and Interviewers
+    const [countries, setCountries] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [loadingCities, setLoadingCities] = useState(false);
+    const [interviewers, setInterviewers] = useState([]);
+
+    // Edit Interview Modal
+    const [editInterviewModalOpen, setEditInterviewModalOpen] = useState(false);
+    const [savingEditInterview, setSavingEditInterview] = useState(false);
+    const [editConflictWarning, setEditConflictWarning] = useState(null);
+    const [editInterviewForm, setEditInterviewForm] = useState({
+        scheduled_at: '',
+        interview_type: 'online',
+        meeting_link: '',
+        location: '',
+        interviewer_id: '',
+        scorecard_template_id: '',
+        status: 'scheduled',
+        send_update_email: true,
+        force_conflict: false,
+    });
+
+    // Cancel Interview Modal
+    const [cancelInterviewModalOpen, setCancelInterviewModalOpen] = useState(false);
+    const [savingCancelInterview, setSavingCancelInterview] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState('');
+    const [sendCancellationEmail, setSendCancellationEmail] = useState(true);
+
+    const formatForDateTimeLocal = (dateStr) => {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const loadCountries = async () => {
+        try {
+            const res = await api.get('/countries');
+            setCountries(res.data || []);
+        } catch (e) {}
+    };
+
+    const loadUsers = async () => {
+        try {
+            const res = await api.get('/users');
+            setInterviewers(res.data || []);
+        } catch (e) {}
+    };
+
+    const loadCities = async (countryParam) => {
+        if (!countryParam) {
+            setCities([]);
+            return;
+        }
+        setLoadingCities(true);
+        try {
+            const res = await api.get(`/countries/${encodeURIComponent(countryParam)}/cities`);
+            setCities(res.data || []);
+        } catch (e) {
+            setCities([]);
+        } finally {
+            setLoadingCities(false);
+        }
+    };
+
+    const openEditInterviewModal = (interview) => {
+        setEditConflictWarning(null);
+        setEditInterviewForm({
+            scheduled_at: formatForDateTimeLocal(interview.scheduled_at),
+            interview_type: interview.interview_type || 'online',
+            meeting_link: interview.meeting_link || '',
+            location: interview.location || '',
+            interviewer_id: interview.interviewer_id || '',
+            scorecard_template_id: interview.scorecard_template_id || '',
+            status: interview.status || 'scheduled',
+            send_update_email: true,
+            force_conflict: false,
+        });
+        setEditInterviewModalOpen(true);
+    };
+
+    const handleSaveEditInterview = async (e, forceConflict = false) => {
+        if (e) e.preventDefault();
+        if (!activeInterview) return;
+        setSavingEditInterview(true);
+        try {
+            await api.put(`/interviews/${activeInterview.id}`, {
+                ...editInterviewForm,
+                force_conflict: forceConflict || editInterviewForm.force_conflict,
+            });
+            showToast('تم تعديل موعد وبيانات المقابلة بنجاح!', 'success');
+            setEditInterviewModalOpen(false);
+            setEditConflictWarning(null);
+            await loadApplicant();
+        } catch (err) {
+            if (err.has_conflict) {
+                setEditConflictWarning(err.message);
+            } else {
+                showToast(err.message || 'فشل تعديل بيانات المقابلة.', 'error');
+            }
+        } finally {
+            setSavingEditInterview(false);
+        }
+    };
+
+    const openCancelInterviewModal = () => {
+        setCancellationReason('');
+        setSendCancellationEmail(true);
+        setCancelInterviewModalOpen(true);
+    };
+
+    const handleConfirmCancelInterview = async () => {
+        if (!activeInterview) return;
+        setSavingCancelInterview(true);
+        try {
+            await api.put(`/interviews/${activeInterview.id}`, {
+                status: 'cancelled',
+                cancellation_reason: cancellationReason,
+                send_cancellation_email: sendCancellationEmail,
+            });
+            showToast('تم إلغاء المقابلة بنجاح.', 'info');
+            setCancelInterviewModalOpen(false);
+            await loadApplicant();
+        } catch (err) {
+            showToast(err.message || 'فشل إلغاء المقابلة.', 'error');
+        } finally {
+            setSavingCancelInterview(false);
+        }
+    };
+
     // Google Calendar & iCalendar (.ics) integration helpers (25-min active interview unit in Riyadh Timezone)
     const getGoogleCalendarUrl = (interview, app) => {
         if (!interview || !interview.scheduled_at || !app) return '#';
@@ -185,13 +316,14 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                 full_name: app.full_name || '',
                 email: app.email || '',
                 phone: app.phone || '',
+                phone_code: app.phone_code || '+20',
                 national_id: app.national_id || '',
                 age: app.age || '',
                 birth_date: app.birth_date || '',
                 gender: app.gender || 'ذكر',
                 country: app.country || 'مصر',
-                city: app.city || '',
-                governorate: app.governorate || '',
+                city: app.city || app.governorate || '',
+                governorate: app.governorate || app.city || '',
                 address: app.address || '',
                 marital_status: app.marital_status || 'أعزب',
                 position: app.position || '',
@@ -235,6 +367,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
             setSkillsList(app.skills || []);
             setSocialLinks(app.social_links || []);
             setPortfolioItems(app.portfolio_items || []);
+            loadCities(app.country || 'مصر');
 
             // Set active interview if exists
             if (app.interviews && app.interviews.length > 0) {
@@ -277,6 +410,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     }, [applicantId]);
 
     useEffect(() => {
+        loadCountries();
+        loadUsers();
         api.get('/scorecard-templates')
             .then(res => setScorecardTemplates(res.data || []))
             .catch(() => {});
@@ -1145,30 +1280,97 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">{t('phone')}</label>
-                                        <input
-                                            type="text"
-                                            value={personalForm.phone}
-                                            onChange={e => setPersonalForm({ ...personalForm, phone: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono"
-                                        />
+                                        <div className="flex gap-1.5">
+                                            <select
+                                                value={personalForm.phone_code || '+20'}
+                                                onChange={e => setPersonalForm({ ...personalForm, phone_code: e.target.value })}
+                                                className="w-28 px-2 py-2 rounded-lg border border-slate-200 text-xs font-mono bg-white shrink-0"
+                                            >
+                                                {countries.map(c => (
+                                                    <option key={c.id} value={c.phone_code}>
+                                                        {c.flag_emoji} {c.phone_code}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <input
+                                                type="text"
+                                                value={personalForm.phone}
+                                                onChange={e => setPersonalForm({ ...personalForm, phone: e.target.value })}
+                                                className="flex-1 px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono"
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">{t('country')}</label>
-                                        <input
-                                            type="text"
+                                        <select
                                             value={personalForm.country}
-                                            onChange={e => setPersonalForm({ ...personalForm, country: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
-                                        />
+                                            onChange={e => {
+                                                const newCountry = e.target.value;
+                                                const countryObj = countries.find(c => c.name_ar === newCountry || c.name_en === newCountry);
+                                                setPersonalForm(prev => ({
+                                                    ...prev,
+                                                    country: newCountry,
+                                                    city: '',
+                                                    governorate: '',
+                                                    phone_code: countryObj?.phone_code || prev.phone_code
+                                                }));
+                                                loadCities(newCountry);
+                                            }}
+                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs bg-white font-semibold"
+                                        >
+                                            <option value="">-- {t('selectCountry')} --</option>
+                                            {countries.some(c => c.is_arab) && (
+                                                <optgroup label={t('allArabCountries')}>
+                                                    {countries.filter(c => c.is_arab).map(c => (
+                                                        <option key={c.id} value={isRtl ? c.name_ar : c.name_en}>
+                                                            {c.flag_emoji} {isRtl ? c.name_ar : c.name_en}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
+                                            {countries.some(c => !c.is_arab) && (
+                                                <optgroup label={t('otherCountries')}>
+                                                    {countries.filter(c => !c.is_arab).map(c => (
+                                                        <option key={c.id} value={isRtl ? c.name_ar : c.name_en}>
+                                                            {c.flag_emoji} {isRtl ? c.name_ar : c.name_en}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
+                                        </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">المحافظة</label>
-                                        <input
-                                            type="text"
-                                            value={personalForm.governorate}
-                                            onChange={e => setPersonalForm({ ...personalForm, governorate: e.target.value })}
-                                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
-                                        />
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">{t('governorate')} / {t('city')}</label>
+                                        {cities.length > 0 ? (
+                                            <select
+                                                value={personalForm.city || personalForm.governorate || ''}
+                                                onChange={e => setPersonalForm(prev => ({
+                                                    ...prev,
+                                                    city: e.target.value,
+                                                    governorate: e.target.value,
+                                                }))}
+                                                className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs bg-white font-semibold"
+                                            >
+                                                <option value="">-- {t('selectCity')} --</option>
+                                                {cities.map(ct => (
+                                                    <option key={ct.id} value={isRtl ? ct.name_ar : ct.name_en}>
+                                                        {isRtl ? ct.name_ar : ct.name_en}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={personalForm.city || personalForm.governorate || ''}
+                                                onChange={e => setPersonalForm(prev => ({
+                                                    ...prev,
+                                                    city: e.target.value,
+                                                    governorate: e.target.value,
+                                                }))}
+                                                placeholder={loadingCities ? 'جاري التحميل...' : 'المدينة أو المحافظة...'}
+                                                className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs"
+                                            />
+                                        )}
                                     </div>
                                     <div className="sm:col-span-4">
                                         <label className="block text-xs font-bold text-slate-700 mb-1">العنوان</label>
@@ -2148,10 +2350,17 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                                             : activeInterview.status === 'cancelled'
                                                             ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                            : activeInterview.status === 'missed'
+                                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                                             : 'bg-blue-50 text-blue-700 border border-blue-200'
                                                     }`}>
-                                                        {t(`interview_${activeInterview.status}`) || activeInterview.status}
+                                                        {activeInterview.status === 'missed' ? t('status_missed_badge') : (t(`interview_${activeInterview.status}`) || activeInterview.status)}
                                                     </span>
+                                                    {activeInterview.status === 'cancelled' && activeInterview.cancellation_reason && (
+                                                        <span className="text-[10px] bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md border border-rose-200">
+                                                            {t('cancellationReason')}: {activeInterview.cancellation_reason}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 flex-wrap">
                                                     <span>المحكّم: <strong className="text-slate-700">{activeInterview.interviewer?.name || 'غير محدد'}</strong></span>
@@ -2203,6 +2412,26 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
                                         {/* Calendar Export & Delete Action Buttons */}
                                         <div className="flex items-center gap-1.5 flex-wrap">
+                                            {activeInterview.status !== 'completed' && hasPermission('schedule_interviews') && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEditInterviewModal(activeInterview)}
+                                                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                >
+                                                    <span>✏️</span>
+                                                    <span>{t('editInterview')}</span>
+                                                </button>
+                                            )}
+                                            {(activeInterview.status === 'scheduled' || activeInterview.status === 'missed') && hasPermission('schedule_interviews') && (
+                                                <button
+                                                    type="button"
+                                                    onClick={openCancelInterviewModal}
+                                                    className="px-2.5 py-1.5 rounded-lg border border-amber-200 hover:bg-amber-50 text-amber-700 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                >
+                                                    <span>🚫</span>
+                                                    <span>{t('cancelInterview')}</span>
+                                                </button>
+                                            )}
                                             <a
                                                 href={getGoogleCalendarUrl(activeInterview, applicant)}
                                                 target="_blank"
@@ -2845,6 +3074,21 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                     </p>
                                 </div>
                             )}
+
+                            {/* Send Invitation Email Checkbox */}
+                            <div className="flex items-center gap-2 pt-1">
+                                <input
+                                    type="checkbox"
+                                    id="send_invitation_email"
+                                    checked={scheduleForm.send_invitation_email}
+                                    onChange={e => setScheduleForm({ ...scheduleForm, send_invitation_email: e.target.checked })}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                />
+                                <label htmlFor="send_invitation_email" className="text-xs font-bold text-slate-700 cursor-pointer">
+                                    {t('sendNotificationEmail')}
+                                </label>
+                            </div>
+
                             <div className="pt-2 flex gap-2 justify-end">
                                 <button
                                     type="button"
@@ -2920,6 +3164,257 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Edit Interview */}
+            {editInterviewModalOpen && activeInterview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 my-8">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                            <div>
+                                <h3 className="font-bold text-sm text-slate-900">
+                                    {t('editInterview')}
+                                </h3>
+                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                    {applicant.full_name} &bull; {applicant.position}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setEditInterviewModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        {editConflictWarning && (
+                            <div className="mb-4 p-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-800 text-xs space-y-2">
+                                <div className="flex items-center gap-1.5 font-bold">
+                                    <span>⚠️</span> {t('conflictWarning')}
+                                </div>
+                                <p className="leading-relaxed">{editConflictWarning}</p>
+                                <div className="pt-1 flex justify-end">
+                                    <button
+                                        type="button"
+                                        disabled={savingEditInterview}
+                                        onClick={(e) => handleSaveEditInterview(e, true)}
+                                        className="px-3 py-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold cursor-pointer"
+                                    >
+                                        {savingEditInterview ? t('saving') : t('forceSchedule')}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveEditInterview} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    {t('scheduledAt')} * <span className="text-[10px] text-blue-600 font-normal">(بتوقيت الرياض - GMT+3)</span>
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    required
+                                    value={editInterviewForm.scheduled_at}
+                                    onChange={e => {
+                                        setEditInterviewForm({ ...editInterviewForm, scheduled_at: e.target.value });
+                                        if (editConflictWarning) setEditConflictWarning(null);
+                                    }}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+
+                                {editInterviewForm.scheduled_at && (() => {
+                                    const info = getInterviewDurationInfo(editInterviewForm.scheduled_at);
+                                    if (!info) return null;
+                                    return (
+                                        <div className="mt-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <span>⏱️</span>
+                                                <span>من <strong className="font-mono text-emerald-800">{info.startText}</strong> إلى <strong className="font-mono text-emerald-800">{info.endText}</strong></span>
+                                            </div>
+                                            <span className="text-[10px] bg-emerald-200/80 text-emerald-950 font-bold px-2 py-0.5 rounded">
+                                                25 دقيقة نشطة
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">{t('interviewType')}</label>
+                                    <select
+                                        value={editInterviewForm.interview_type}
+                                        onChange={e => setEditInterviewForm({ ...editInterviewForm, interview_type: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                                    >
+                                        <option value="online">{t('interviewType_online')}</option>
+                                        <option value="in_person">{t('interviewType_in_person')}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">{t('assignedInterviewer')}</label>
+                                    <select
+                                        value={editInterviewForm.interviewer_id}
+                                        onChange={e => setEditInterviewForm({ ...editInterviewForm, interviewer_id: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                                    >
+                                        <option value="">-- {t('assignedInterviewer')} --</option>
+                                        {interviewers.map(u => (
+                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">{t('scorecardTemplate')}</label>
+                                <select
+                                    value={editInterviewForm.scorecard_template_id}
+                                    onChange={e => setEditInterviewForm({ ...editInterviewForm, scorecard_template_id: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                                >
+                                    <option value="">-- {t('noTemplate')} --</option>
+                                    {scorecardTemplates.map(tpl => (
+                                        <option key={tpl.id} value={tpl.id}>
+                                            {tpl.title} ({tpl.position || 'عام'}) - {tpl.total_max_score} درجة
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {editInterviewForm.interview_type === 'online' ? (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        رابط المقابلة (Meeting Link)
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={editInterviewForm.meeting_link}
+                                        onChange={e => setEditInterviewForm({ ...editInterviewForm, meeting_link: e.target.value })}
+                                        placeholder="https://meet.google.com/..."
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs"
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        مقر المقابلة (Location)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editInterviewForm.location}
+                                        onChange={e => setEditInterviewForm({ ...editInterviewForm, location: e.target.value })}
+                                        placeholder="اسم القاعة أو المقر..."
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2 pt-1">
+                                <input
+                                    type="checkbox"
+                                    id="detail_edit_send_update_email"
+                                    checked={editInterviewForm.send_update_email}
+                                    onChange={e => setEditInterviewForm({ ...editInterviewForm, send_update_email: e.target.checked })}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                />
+                                <label htmlFor="detail_edit_send_update_email" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                                    {t('sendUpdateEmail')}
+                                </label>
+                            </div>
+
+                            <div className="pt-3 flex gap-2 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditInterviewModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                >
+                                    {t('cancel')}
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingEditInterview}
+                                    className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-50 cursor-pointer"
+                                >
+                                    {savingEditInterview ? t('saving') : t('save')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Cancel Interview */}
+            {cancelInterviewModalOpen && activeInterview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 my-8">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                            <h3 className="font-bold text-sm text-slate-900">
+                                {t('cancelInterview')}
+                            </h3>
+                            <button
+                                onClick={() => setCancelInterviewModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                            <p className="font-bold">{applicant.full_name}</p>
+                            <p className="text-[11px] mt-0.5">{applicant.position}</p>
+                            <p className="text-[11px] text-amber-700 mt-1">
+                                هل أنت متأكد من رغبتك في إلغاء هذه المقابلة؟
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    {t('cancellationReason')}
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={cancellationReason}
+                                    onChange={e => setCancellationReason(e.target.value)}
+                                    placeholder="اكتب سبب الإلغاء إن وجد (اختياري)..."
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs leading-relaxed"
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="detail_cancel_send_email"
+                                    checked={sendCancellationEmail}
+                                    onChange={e => setSendCancellationEmail(e.target.checked)}
+                                    className="rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                                />
+                                <label htmlFor="detail_cancel_send_email" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                                    {t('sendCancellationEmail')}
+                                </label>
+                            </div>
+
+                            <div className="pt-3 flex gap-2 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelInterviewModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                >
+                                    {t('cancel')}
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={savingCancelInterview}
+                                    onClick={handleConfirmCancelInterview}
+                                    className="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold disabled:opacity-50 cursor-pointer"
+                                >
+                                    {savingCancelInterview ? t('saving') : t('cancelInterview')}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

@@ -59,6 +59,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
         full_name: '',
         email: '',
         phone: '',
+        phone_code: '+20',
         country: 'مصر',
         city: '',
         position: 'Full Stack Developer (Laravel & React)',
@@ -68,6 +69,33 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
         cover_letter: '',
         internal_notes: '',
     });
+
+    const [countries, setCountries] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [loadingCities, setLoadingCities] = useState(false);
+
+    const loadCountries = async () => {
+        try {
+            const res = await api.get('/countries');
+            setCountries(res.data || []);
+        } catch (e) {}
+    };
+
+    const loadCities = async (countryParam) => {
+        if (!countryParam) {
+            setCities([]);
+            return;
+        }
+        setLoadingCities(true);
+        try {
+            const res = await api.get(`/countries/${encodeURIComponent(countryParam)}/cities`);
+            setCities(res.data || []);
+        } catch (e) {
+            setCities([]);
+        } finally {
+            setLoadingCities(false);
+        }
+    };
 
     // Schedule Interview Form
     const [interviewForm, setInterviewForm] = useState({
@@ -105,6 +133,11 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        loadCountries();
+        loadCities('مصر');
+    }, []);
 
     useEffect(() => {
         if (currentRoute.includes('action=new')) {
@@ -206,6 +239,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                 full_name: '',
                 email: '',
                 phone: '',
+                phone_code: '+20',
                 country: 'مصر',
                 city: '',
                 position: 'Full Stack Developer (Laravel & React)',
@@ -910,13 +944,89 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">{t('phone')} *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={newApplicant.phone}
-                                        onChange={e => setNewApplicant({ ...newApplicant, phone: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
-                                    />
+                                    <div className="flex gap-1.5">
+                                        <select
+                                            value={newApplicant.phone_code || '+20'}
+                                            onChange={e => setNewApplicant({ ...newApplicant, phone_code: e.target.value })}
+                                            className="w-24 px-1.5 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white shrink-0"
+                                        >
+                                            {countries.map(c => (
+                                                <option key={c.id} value={c.phone_code}>
+                                                    {c.flag_emoji} {c.phone_code}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={newApplicant.phone}
+                                            onChange={e => setNewApplicant({ ...newApplicant, phone: e.target.value })}
+                                            className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">{t('country')}</label>
+                                    <select
+                                        value={newApplicant.country}
+                                        onChange={e => {
+                                            const newCountry = e.target.value;
+                                            const countryObj = countries.find(c => c.name_ar === newCountry || c.name_en === newCountry);
+                                            setNewApplicant(prev => ({
+                                                ...prev,
+                                                country: newCountry,
+                                                city: '',
+                                                phone_code: countryObj?.phone_code || prev.phone_code,
+                                            }));
+                                            loadCities(newCountry);
+                                        }}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                                    >
+                                        <option value="">-- {t('selectCountry')} --</option>
+                                        {countries.some(c => c.is_arab) && (
+                                            <optgroup label={t('allArabCountries')}>
+                                                {countries.filter(c => c.is_arab).map(c => (
+                                                    <option key={c.id} value={isRtl ? c.name_ar : c.name_en}>
+                                                        {c.flag_emoji} {isRtl ? c.name_ar : c.name_en}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                        {countries.some(c => !c.is_arab) && (
+                                            <optgroup label={t('otherCountries')}>
+                                                {countries.filter(c => !c.is_arab).map(c => (
+                                                    <option key={c.id} value={isRtl ? c.name_ar : c.name_en}>
+                                                        {c.flag_emoji} {isRtl ? c.name_ar : c.name_en}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">{t('city')} / {t('governorate')}</label>
+                                    {cities.length > 0 ? (
+                                        <select
+                                            value={newApplicant.city}
+                                            onChange={e => setNewApplicant({ ...newApplicant, city: e.target.value })}
+                                            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                                        >
+                                            <option value="">-- {t('selectCity')} --</option>
+                                            {cities.map(ct => (
+                                                <option key={ct.id} value={isRtl ? ct.name_ar : ct.name_en}>
+                                                    {isRtl ? ct.name_ar : ct.name_en}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={newApplicant.city}
+                                            onChange={e => setNewApplicant({ ...newApplicant, city: e.target.value })}
+                                            placeholder={loadingCities ? 'جاري التحميل...' : 'المدينة أو المحافظة...'}
+                                            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                                        />
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">{t('position')} *</label>

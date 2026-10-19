@@ -20,6 +20,7 @@ export default function PublicApplyPage({ navigate }) {
         full_name: '',
         email: '',
         phone: '',
+        phone_code: '+20',
         national_id: '',
         country: 'مصر',
         city: '',
@@ -34,6 +35,25 @@ export default function PublicApplyPage({ navigate }) {
     });
 
     const [currentSkill, setCurrentSkill] = useState('');
+    const [countries, setCountries] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [loadingCities, setLoadingCities] = useState(false);
+
+    const loadCities = async (countryParam) => {
+        if (!countryParam) {
+            setCities([]);
+            return;
+        }
+        setLoadingCities(true);
+        try {
+            const res = await api.get(`/public/countries/${encodeURIComponent(countryParam)}/cities`);
+            setCities(res.data || []);
+        } catch (e) {
+            setCities([]);
+        } finally {
+            setLoadingCities(false);
+        }
+    };
 
     useEffect(() => {
         api.get('/public/config')
@@ -51,6 +71,22 @@ export default function PublicApplyPage({ navigate }) {
                 });
             })
             .finally(() => setLoadingConfig(false));
+
+        api.get('/public/countries')
+            .then(res => {
+                const list = res.data || [];
+                setCountries(list);
+                if (list.length > 0) {
+                    const defaultC = list.find(c => c.name_ar === 'مصر' || c.code === 'EG') || list[0];
+                    setFormData(prev => ({
+                        ...prev,
+                        country: isRtl ? defaultC.name_ar : defaultC.name_en,
+                        phone_code: defaultC.phone_code,
+                    }));
+                    loadCities(defaultC.name_ar);
+                }
+            })
+            .catch(() => {});
     }, []);
 
     const handleAddSkill = (e) => {
@@ -256,14 +292,27 @@ export default function PublicApplyPage({ navigate }) {
                             <label className="block text-xs font-bold text-slate-700 mb-1.5">
                                 {t('phone')} <span className="text-rose-500">*</span>
                             </label>
-                            <input
-                                type="tel"
-                                required
-                                value={formData.phone}
-                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                placeholder="+20 100 123 4567"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                            />
+                            <div className="flex gap-2">
+                                <select
+                                    value={formData.phone_code}
+                                    onChange={e => setFormData({ ...formData, phone_code: e.target.value })}
+                                    className="w-32 px-2.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs font-mono bg-white shrink-0"
+                                >
+                                    {countries.map(c => (
+                                        <option key={c.id} value={c.phone_code}>
+                                            {c.flag_emoji} {c.phone_code}
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="tel"
+                                    required
+                                    value={formData.phone}
+                                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                    placeholder="100 123 4567"
+                                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-mono"
+                                />
+                            </div>
                         </div>
 
                         <div>
@@ -286,26 +335,69 @@ export default function PublicApplyPage({ navigate }) {
                             <label className="block text-xs font-bold text-slate-700 mb-1.5">
                                 {t('country')}
                             </label>
-                            <input
-                                type="text"
+                            <select
                                 value={formData.country}
-                                onChange={e => setFormData({ ...formData, country: e.target.value })}
-                                placeholder="مصر، السعودية، الإمارات..."
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                            />
+                                onChange={e => {
+                                    const newCountry = e.target.value;
+                                    const countryObj = countries.find(c => c.name_ar === newCountry || c.name_en === newCountry);
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        country: newCountry,
+                                        city: '',
+                                        phone_code: countryObj?.phone_code || prev.phone_code,
+                                    }));
+                                    loadCities(newCountry);
+                                }}
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-white font-semibold"
+                            >
+                                <option value="">-- {t('selectCountry')} --</option>
+                                {countries.some(c => c.is_arab) && (
+                                    <optgroup label={t('allArabCountries')}>
+                                        {countries.filter(c => c.is_arab).map(c => (
+                                            <option key={c.id} value={isRtl ? c.name_ar : c.name_en}>
+                                                {c.flag_emoji} {isRtl ? c.name_ar : c.name_en}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                )}
+                                {countries.some(c => !c.is_arab) && (
+                                    <optgroup label={t('otherCountries')}>
+                                        {countries.filter(c => !c.is_arab).map(c => (
+                                            <option key={c.id} value={isRtl ? c.name_ar : c.name_en}>
+                                                {c.flag_emoji} {isRtl ? c.name_ar : c.name_en}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                )}
+                            </select>
                         </div>
 
                         <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                {t('city')}
+                                {t('city')} / {t('governorate')}
                             </label>
-                            <input
-                                type="text"
-                                value={formData.city}
-                                onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                placeholder="القاهرة، الرياض..."
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                            />
+                            {cities.length > 0 ? (
+                                <select
+                                    value={formData.city}
+                                    onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm bg-white font-semibold"
+                                >
+                                    <option value="">-- {t('selectCity')} --</option>
+                                    {cities.map(ct => (
+                                        <option key={ct.id} value={isRtl ? ct.name_ar : ct.name_en}>
+                                            {isRtl ? ct.name_ar : ct.name_en}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={formData.city}
+                                    onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                    placeholder={loadingCities ? 'جاري التحميل...' : 'القاهرة، الرياض...'}
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                                />
+                            )}
                         </div>
 
                         <div>

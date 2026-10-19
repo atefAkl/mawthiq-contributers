@@ -77,3 +77,23 @@ export function formatUtcCalendar(d) {
     if (!d || isNaN(d.getTime())) return '';
     return d.toISOString().replace(/-|:|\.\d\d\d/g, "");
 }
+
+/**
+ * Calculate 25-minute interview window end time in Riyadh timezone.
+ *
+ * @param {string|Date} startVal
+ * @param {boolean} isRtl
+ * @returns {{ startFormatted: string, endFormatted: string, endDate: Date }|null}
+ */
+export function getInterviewDurationInfo(startVal, isRtl = true) {
+    if (!startVal) return null;
+    const start = new Date(startVal);
+    if (isNaN(start.getTime())) return null;
+    const end = new Date(start.getTime() + 25 * 60 * 1000);
+    return {
+        startFormatted: formatRiyadhTime(start, isRtl),
+        endFormatted: formatRiyadhTime(end, isRtl),
+        endDate: end,
+    };
+}
+

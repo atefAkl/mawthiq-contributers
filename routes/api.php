@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ApplicantController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\EmailController;
 use App\Http\Controllers\Api\InterviewController;
 use App\Http\Controllers\Api\NotificationController;
@@ -25,8 +26,12 @@ Route::prefix('auth')->group(function () {
 Route::prefix('public')->group(function () {
     Route::get('/config', [PublicApplyController::class, 'getConfig']);
     Route::post('/apply', [PublicApplyController::class, 'apply']);
+    Route::get('/countries', [CountryController::class, 'index']);
+    Route::get('/countries/{id}/cities', [CountryController::class, 'getCities']);
 });
 
+Route::get('/countries', [CountryController::class, 'index']);
+Route::get('/countries/{id}/cities', [CountryController::class, 'getCities']);
 Route::get('/applicants/export', [ApplicantController::class, 'export']);
 
 /*

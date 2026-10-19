@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
-import { formatRiyadhDateTime, formatUtcCalendar, RIYADH_TIMEZONE } from '../utils/date';
+import { formatRiyadhDateTime, formatUtcCalendar, formatRiyadhTime, getInterviewDurationInfo, RIYADH_TIMEZONE } from '../utils/date';
 
 export default function InterviewsPage({ currentRoute, navigate }) {
     const { t, isRtl } = useLanguage();
@@ -18,6 +18,10 @@ export default function InterviewsPage({ currentRoute, navigate }) {
     const [loading, setLoading] = useState(true);
     const [activeStatus, setActiveStatus] = useState('all');
     const [search, setSearch] = useState('');
+
+    // Metadata
+    const [interviewers, setInterviewers] = useState([]);
+    const [scorecardTemplates, setScorecardTemplates] = useState([]);
 
     // Record Results Modal
     const [selectedInterview, setSelectedInterview] = useState(null);
@@ -31,6 +35,28 @@ export default function InterviewsPage({ currentRoute, navigate }) {
         feedback: '',
         promote_to_status: 'probation',
     });
+
+    // Edit Interview Modal
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [savingEdit, setSavingEdit] = useState(false);
+    const [conflictWarning, setConflictWarning] = useState(null);
+    const [editForm, setEditForm] = useState({
+        scheduled_at: '',
+        interview_type: 'online',
+        meeting_link: '',
+        location: '',
+        interviewer_id: '',
+        scorecard_template_id: '',
+        status: 'scheduled',
+        send_update_email: true,
+        force_conflict: false,
+    });
+
+    // Cancel Interview Modal
+    const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [savingCancel, setSavingCancel] = useState(false);
+    const [cancellationReason, setCancellationReason] = useState('');
+    const [sendCancellationEmail, setSendCancellationEmail] = useState(true);
 
     const loadInterviews = async (status = activeStatus) => {
         setLoading(true);
@@ -47,9 +73,100 @@ export default function InterviewsPage({ currentRoute, navigate }) {
         }
     };
 
+    const loadMeta = async () => {
+        try {
+            const [usersRes, scRes] = await Promise.all([
+                api.get('/users'),
+                api.get('/scorecard-templates'),
+            ]);
+            setInterviewers(usersRes.data || []);
+            setScorecardTemplates(scRes.data || []);
+        } catch (e) {}
+    };
+
     useEffect(() => {
         loadInterviews(activeStatus);
+        loadMeta();
     }, [activeStatus]);
+
+    const formatForDateTimeLocal = (dateStr) => {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const openEditModal = (interview) => {
+        setSelectedInterview(interview);
+        setConflictWarning(null);
+        setEditForm({
+            scheduled_at: formatForDateTimeLocal(interview.scheduled_at),
+            interview_type: interview.interview_type || 'online',
+            meeting_link: interview.meeting_link || '',
+            location: interview.location || '',
+            interviewer_id: interview.interviewer_id || '',
+            scorecard_template_id: interview.scorecard_template_id || '',
+            status: interview.status || 'scheduled',
+            send_update_email: true,
+            force_conflict: false,
+        });
+        setEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async (e, forceConflict = false) => {
+        if (e) e.preventDefault();
+        if (!selectedInterview) return;
+        setSavingEdit(true);
+
+        const payload = {
+            ...editForm,
+            force_conflict: forceConflict || editForm.force_conflict,
+        };
+
+        try {
+            await api.put(`/interviews/${selectedInterview.id}`, payload);
+            showToast('تم تعديل موعد وبيانات المقابلة بنجاح!', 'success');
+            setEditModalOpen(false);
+            setConflictWarning(null);
+            loadInterviews(activeStatus);
+        } catch (err) {
+            if (err.has_conflict) {
+                setConflictWarning(err.message);
+            } else {
+                showToast(err.message || 'فشل تعديل بيانات المقابلة.', 'error');
+            }
+        } finally {
+            setSavingEdit(false);
+        }
+    };
+
+    const openCancelModal = (interview) => {
+        setSelectedInterview(interview);
+        setCancellationReason('');
+        setSendCancellationEmail(true);
+        setCancelModalOpen(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!selectedInterview) return;
+        setSavingCancel(true);
+
+        try {
+            await api.put(`/interviews/${selectedInterview.id}`, {
+                status: 'cancelled',
+                cancellation_reason: cancellationReason,
+                send_cancellation_email: sendCancellationEmail,
+            });
+            showToast('تم إلغاء المقابلة بنجاح.', 'info');
+            setCancelModalOpen(false);
+            loadInterviews(activeStatus);
+        } catch (err) {
+            showToast(err.message || 'فشل إلغاء المقابلة.', 'error');
+        } finally {
+            setSavingCancel(false);
+        }
+    };
 
     const openRecordResults = (interview) => {
         setSelectedInterview(interview);
@@ -188,8 +305,8 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                     />
                 </PageHeader>
 
-                {/* 2. KPI Summary Cards Row (4 Stat Cards) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* 2. KPI Summary Cards Row (5 Stat Cards) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
                         <div>
                             <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -206,7 +323,7 @@ export default function InterviewsPage({ currentRoute, navigate }) {
 
                     <div className="bg-white border border-slate-200 rounded-lg px-4 py-3.5 flex items-center justify-between">
                         <div>
-                            <div className="w-7 h-7 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -215,6 +332,20 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                         </div>
                         <div className="text-2xl font-bold text-slate-900">
                             {stats.scheduled || 0}
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-amber-200 bg-amber-50/20 rounded-lg px-4 py-3.5 flex items-center justify-between">
+                        <div>
+                            <div className="w-7 h-7 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs text-amber-800 font-semibold mt-1.5">{t('interview_missed')}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-amber-800">
+                            {stats.missed || 0}
                         </div>
                     </div>
 
@@ -286,6 +417,7 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                         {[
                             { id: 'all', label: t('status_all') },
                             { id: 'scheduled', label: t('interview_scheduled') },
+                            { id: 'missed', label: t('interview_missed') },
                             { id: 'completed', label: t('interview_completed') },
                             { id: 'cancelled', label: t('interview_cancelled') },
                         ].map(tab => (
@@ -374,9 +506,17 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                          : item.status === 'cancelled'
                                                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                                         : item.status === 'missed'
+                                                         ? 'bg-amber-50 text-amber-700 border-amber-200'
                                                          : 'bg-blue-50 text-blue-700 border-blue-200'
                                                  }`}>
-                                                     {item.status === 'completed' ? t('status_completed_badge') : item.status === 'cancelled' ? t('status_cancelled_badge') : t('status_scheduled_badge')}
+                                                     {item.status === 'completed'
+                                                        ? t('status_completed_badge')
+                                                        : item.status === 'cancelled'
+                                                        ? t('status_cancelled_badge')
+                                                        : item.status === 'missed'
+                                                        ? t('status_missed_badge')
+                                                        : t('status_scheduled_badge')}
                                                  </span>
                                              </td>
                                              <td className="px-4 py-3 text-center">
@@ -419,7 +559,28 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                          tooltip={t('viewInterviewCandidate')}
                                                          icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                                                      />
-                                                     {hasPermission('record_interview_results') && (
+                                                     {item.status !== 'completed' && hasPermission('schedule_interviews') && (
+                                                         <IconButton
+                                                             size="sm"
+                                                             variant="ghost"
+                                                             tooltipPosition="top"
+                                                             onClick={() => openEditModal(item)}
+                                                             tooltip={t('editInterview')}
+                                                             icon="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                         />
+                                                     )}
+                                                     {(item.status === 'scheduled' || item.status === 'missed') && hasPermission('schedule_interviews') && (
+                                                         <IconButton
+                                                             size="sm"
+                                                             variant="ghost"
+                                                             tooltipPosition="top"
+                                                             onClick={() => openCancelModal(item)}
+                                                             tooltip={t('cancelInterview')}
+                                                             className="hover:text-amber-600 hover:bg-amber-50"
+                                                             icon="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                         />
+                                                     )}
+                                                     {item.status !== 'cancelled' && hasPermission('record_interview_results') && (
                                                          <IconButton
                                                              size="sm"
                                                              variant="ghost"
@@ -450,6 +611,257 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                     </div>
                 </div>
             </div>
+
+            {/* Modal: Edit Interview */}
+            {editModalOpen && selectedInterview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl border border-slate-200 my-8">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                            <div>
+                                <h3 className="font-bold text-sm text-slate-900">
+                                    {t('editInterview')}
+                                </h3>
+                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                    {selectedInterview.applicant?.full_name} &bull; {selectedInterview.applicant?.position}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setEditModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        {conflictWarning && (
+                            <div className="mb-4 p-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-800 text-xs space-y-2">
+                                <div className="flex items-center gap-1.5 font-bold">
+                                    <span>⚠️</span> {t('conflictWarning')}
+                                </div>
+                                <p className="leading-relaxed">{conflictWarning}</p>
+                                <div className="pt-1 flex justify-end">
+                                    <button
+                                        type="button"
+                                        disabled={savingEdit}
+                                        onClick={(e) => handleSaveEdit(e, true)}
+                                        className="px-3 py-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold cursor-pointer"
+                                    >
+                                        {savingEdit ? t('saving') : t('forceSchedule')}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveEdit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    {t('scheduledAt')} * <span className="text-[10px] text-blue-600 font-normal">(بتوقيت الرياض - GMT+3)</span>
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    required
+                                    value={editForm.scheduled_at}
+                                    onChange={e => {
+                                        setEditForm({ ...editForm, scheduled_at: e.target.value });
+                                        if (conflictWarning) setConflictWarning(null);
+                                    }}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+
+                                {editForm.scheduled_at && (() => {
+                                    const info = getInterviewDurationInfo(editForm.scheduled_at, isRtl);
+                                    if (!info) return null;
+                                    return (
+                                        <div className="mt-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <span>⏱️</span>
+                                                <span>من <strong className="font-mono text-emerald-800">{info.startFormatted}</strong> إلى <strong className="font-mono text-emerald-800">{info.endFormatted}</strong></span>
+                                            </div>
+                                            <span className="text-[10px] bg-emerald-200/80 text-emerald-950 font-bold px-2 py-0.5 rounded">
+                                                25 دقيقة نشطة
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">{t('interviewType')}</label>
+                                    <select
+                                        value={editForm.interview_type}
+                                        onChange={e => setEditForm({ ...editForm, interview_type: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                                    >
+                                        <option value="online">{t('interviewType_online')}</option>
+                                        <option value="in_person">{t('interviewType_in_person')}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">{t('assignedInterviewer')}</label>
+                                    <select
+                                        value={editForm.interviewer_id}
+                                        onChange={e => setEditForm({ ...editForm, interviewer_id: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                                    >
+                                        <option value="">-- {t('assignedInterviewer')} --</option>
+                                        {interviewers.map(u => (
+                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">{t('scorecardTemplate')}</label>
+                                <select
+                                    value={editForm.scorecard_template_id}
+                                    onChange={e => setEditForm({ ...editForm, scorecard_template_id: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold"
+                                >
+                                    <option value="">-- {t('noTemplate')} --</option>
+                                    {scorecardTemplates.map(tpl => (
+                                        <option key={tpl.id} value={tpl.id}>
+                                            {tpl.title} ({tpl.position || 'عام'}) - {tpl.total_max_score} درجة
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {editForm.interview_type === 'online' ? (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        رابط المقابلة (Meeting Link)
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={editForm.meeting_link}
+                                        onChange={e => setEditForm({ ...editForm, meeting_link: e.target.value })}
+                                        placeholder="https://meet.google.com/..."
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs"
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        مقر المقابلة (Location)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.location}
+                                        onChange={e => setEditForm({ ...editForm, location: e.target.value })}
+                                        placeholder="اسم القاعة أو المقر..."
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2 pt-1">
+                                <input
+                                    type="checkbox"
+                                    id="edit_send_update_email"
+                                    checked={editForm.send_update_email}
+                                    onChange={e => setEditForm({ ...editForm, send_update_email: e.target.checked })}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                />
+                                <label htmlFor="edit_send_update_email" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                                    {t('sendUpdateEmail')}
+                                </label>
+                            </div>
+
+                            <div className="pt-3 flex gap-2 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                >
+                                    {t('cancel')}
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingEdit}
+                                    className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-50 cursor-pointer"
+                                >
+                                    {savingEdit ? t('saving') : t('save')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Cancel Interview */}
+            {cancelModalOpen && selectedInterview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
+                    <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200 my-8">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                            <h3 className="font-bold text-sm text-slate-900">
+                                {t('cancelInterview')}
+                            </h3>
+                            <button
+                                onClick={() => setCancelModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                            <p className="font-bold">{selectedInterview.applicant?.full_name}</p>
+                            <p className="text-[11px] mt-0.5">{selectedInterview.applicant?.position}</p>
+                            <p className="text-[11px] text-amber-700 mt-1">
+                                هل أنت متأكد من رغبتك في إلغاء هذه المقابلة؟
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    {t('cancellationReason')}
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={cancellationReason}
+                                    onChange={e => setCancellationReason(e.target.value)}
+                                    placeholder="اكتب سبب الإلغاء إن وجد (اختياري)..."
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs leading-relaxed"
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="cancel_send_email"
+                                    checked={sendCancellationEmail}
+                                    onChange={e => setSendCancellationEmail(e.target.checked)}
+                                    className="rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                                />
+                                <label htmlFor="cancel_send_email" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                                    {t('sendCancellationEmail')}
+                                </label>
+                            </div>
+
+                            <div className="pt-3 flex gap-2 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setCancelModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                >
+                                    {t('cancel')}
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={savingCancel}
+                                    onClick={handleConfirmCancel}
+                                    className="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold disabled:opacity-50 cursor-pointer"
+                                >
+                                    {savingCancel ? t('saving') : t('cancelInterview')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal: Record Interview Results */}
             {resultsModalOpen && selectedInterview && (
