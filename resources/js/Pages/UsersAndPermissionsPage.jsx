@@ -6,9 +6,10 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
+import { formatRiyadhDate } from '../utils/date';
 
 export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
-    const { t } = useLanguage();
+    const { t, isRtl } = useLanguage();
     const { user: currentUser } = useAuth();
     const { showToast } = useToast();
 
@@ -266,7 +267,7 @@ export default function UsersAndPermissionsPage({ currentRoute, navigate }) {
                                                 </span>
                                             </td>
                                             <td className="px-5 py-3.5 text-slate-400 text-[11px]">
-                                                {new Date(u.created_at).toLocaleDateString('ar-EG')}
+                                                {formatRiyadhDate(u.created_at, isRtl, { dateStyle: 'medium' })}
                                             </td>
                                             <td className="px-5 py-3.5 text-center">
                                                 <div className="inline-flex items-center gap-1">

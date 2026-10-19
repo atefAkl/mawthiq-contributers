@@ -151,9 +151,10 @@ class InterviewController extends Controller
 
         // Send email invitation log
         if ($applicant && $request->boolean('send_invitation_email', true)) {
-            $dateFormatted = Carbon::parse($validated['scheduled_at'])->format('Y-m-d H:i');
-            $endTimeFormatted = Carbon::parse($validated['scheduled_at'])->addMinutes(25)->format('H:i');
-            $body = "عزيزي {$applicant->full_name}،\n\nيسعدنا إبلاغك بتحديد موعد مقابلتك الشخصية لوظيفة ({$applicant->position}).\nالموعد: {$dateFormatted} (إلى {$endTimeFormatted})\nالمدة: 25 دقيقة نشطة\nنوع المقابلة: " . ($validated['interview_type'] === 'online' ? 'عبر الإنترنت (أونلاين)' : 'حضورياً') . "\n";
+            $scheduledCarbon = Carbon::parse($validated['scheduled_at'])->setTimezone('Asia/Riyadh');
+            $dateFormatted = $scheduledCarbon->format('Y-m-d H:i');
+            $endTimeFormatted = $scheduledCarbon->copy()->addMinutes(25)->format('H:i');
+            $body = "عزيزي {$applicant->full_name}،\n\nيسعدنا إبلاغك بتحديد موعد مقابلتك الشخصية لوظيفة ({$applicant->position}).\nالموعد: {$dateFormatted} (إلى {$endTimeFormatted}) بتوقيت الشرق الأوسط (الرياض - GMT+3)\nالمدة: 25 دقيقة نشطة\nنوع المقابلة: " . ($validated['interview_type'] === 'online' ? 'عبر الإنترنت (أونلاين)' : 'حضورياً') . "\n";
             if (!empty($validated['meeting_link'])) {
                 $body .= "رابط المقابلة: {$validated['meeting_link']}\n";
             }

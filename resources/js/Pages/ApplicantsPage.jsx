@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
+import { formatRiyadhDate, formatRiyadhDateTime } from '../utils/date';
 
 export default function ApplicantsPage({ currentRoute, navigate }) {
     const { t, isRtl } = useLanguage();
@@ -557,7 +558,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                                     </td>
 
                                                     <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
-                                                        {new Date(app.created_at).toLocaleDateString('en-CA')}
+                                                        {formatRiyadhDate(app.created_at, isRtl, { dateStyle: 'short' })}
                                                     </td>
 
                                                     <td className="px-4 py-3">
@@ -1225,7 +1226,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                             </div>
                             <div>
                                 <span className="text-slate-400 block mb-0.5">تاريخ التقديم:</span>
-                                <span className="font-semibold text-slate-800">{new Date(selectedApplicant.created_at).toLocaleDateString('ar-EG')}</span>
+                                <span className="font-semibold text-slate-800">{formatRiyadhDate(selectedApplicant.created_at, isRtl, { dateStyle: 'medium' })}</span>
                             </div>
                         </div>
 
@@ -1296,7 +1297,7 @@ export default function ApplicantsPage({ currentRoute, navigate }) {
                                             {log.notes || `تم التحويل إلى ${t(`status_${log.to_status}`)}`}
                                         </p>
                                         <span className="text-[10px] text-slate-400">
-                                            بواسطة: {log.changed_by_user?.name || 'النظام'} &bull; {new Date(log.created_at).toLocaleString('ar-EG')}
+                                            بواسطة: {log.changed_by_user?.name || 'النظام'} &bull; {formatRiyadhDateTime(log.created_at, isRtl)}
                                         </span>
                                     </div>
                                 ))}

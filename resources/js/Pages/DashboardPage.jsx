@@ -5,6 +5,7 @@ import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { formatRiyadhDateTime } from '../utils/date';
 
 export default function DashboardPage({ currentRoute, navigate }) {
     const { t, isRtl } = useLanguage();
@@ -249,7 +250,7 @@ export default function DashboardPage({ currentRoute, navigate }) {
                                                 {item.applicant?.full_name} &bull; <span className="font-normal text-slate-500">{item.applicant?.position}</span>
                                             </p>
                                             <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                                                {new Date(item.scheduled_at).toLocaleString(isRtl ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                {formatRiyadhDateTime(item.scheduled_at, isRtl, { dateStyle: 'medium', timeStyle: 'short' })}
                                             </p>
                                         </div>
                                         {item.meeting_link ? (

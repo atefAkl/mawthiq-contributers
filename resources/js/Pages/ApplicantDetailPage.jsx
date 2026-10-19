@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
+import { formatRiyadhDateTime, formatRiyadhDate, formatRiyadhTime, formatUtcCalendar, RIYADH_TIMEZONE } from '../utils/date';
 
 export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const { t, isRtl } = useLanguage();
@@ -90,37 +91,45 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const [conflictWarning, setConflictWarning] = useState(null);
     const [schedulingLoading, setSchedulingLoading] = useState(false);
 
-    // Google Calendar & iCalendar (.ics) integration helpers (25-min active interview unit)
+    // Google Calendar & iCalendar (.ics) integration helpers (25-min active interview unit in Riyadh Timezone)
     const getGoogleCalendarUrl = (interview, app) => {
         if (!interview || !interview.scheduled_at || !app) return '#';
         const title = encodeURIComponent(`مقابلة توظيف: ${app.full_name} (${app.position || 'مساهم'})`);
         const start = new Date(interview.scheduled_at);
         const end = new Date(start.getTime() + 25 * 60 * 1000);
-        const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
-        const dates = `${formatUtc(start)}/${formatUtc(end)}`;
-        const details = encodeURIComponent(`مقابلة المرشح: ${app.full_name}\nرقم الطلب: ${app.application_no}\nرابط الاجتماع: ${interview.meeting_link || ''}\nنوع المقابلة: ${interview.interview_type === 'online' ? 'أونلاين' : 'حضوري'}`);
+        const dates = `${formatUtcCalendar(start)}/${formatUtcCalendar(end)}`;
+        const details = encodeURIComponent(`مقابلة المرشح: ${app.full_name}\nرقم الطلب: ${app.application_no}\nرابط الاجتماع: ${interview.meeting_link || ''}\nنوع المقابلة: ${interview.interview_type === 'online' ? 'أونلاين' : 'حضوري'}\nالتوقيت: بتوقيت الشرق الأوسط (الرياض - GMT+3)`);
         const location = encodeURIComponent(interview.meeting_link || interview.location || 'Online');
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}&ctz=${RIYADH_TIMEZONE}`;
     };
 
     const downloadIcsFile = (interview, app) => {
         if (!interview || !interview.scheduled_at || !app) return;
         const start = new Date(interview.scheduled_at);
         const end = new Date(start.getTime() + 25 * 60 * 1000);
-        const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
         const icsContent = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
             'PRODID:-//Mawthiq Contributors//Interview Scheduler//AR',
             'CALSCALE:GREGORIAN',
             'METHOD:REQUEST',
+            'X-WR-TIMEZONE:Asia/Riyadh',
+            'BEGIN:VTIMEZONE',
+            'TZID:Asia/Riyadh',
+            'BEGIN:STANDARD',
+            'DTSTART:19700101T000000',
+            'TZOFFSETFROM:+0300',
+            'TZOFFSETTO:+0300',
+            'TZNAME:AST',
+            'END:STANDARD',
+            'END:VTIMEZONE',
             'BEGIN:VEVENT',
             `UID:interview-${interview.id}-${Date.now()}@mawthiq.com`,
-            `DTSTAMP:${formatUtc(new Date())}`,
-            `DTSTART:${formatUtc(start)}`,
-            `DTEND:${formatUtc(end)}`,
+            `DTSTAMP:${formatUtcCalendar(new Date())}`,
+            `DTSTART:${formatUtcCalendar(start)}`,
+            `DTEND:${formatUtcCalendar(end)}`,
             `SUMMARY:مقابلة توظيف: ${app.full_name}`,
-            `DESCRIPTION:مقابلة المرشح ${app.full_name} لوظيفة ${app.position || ''}\\nرابط الاجتماع: ${interview.meeting_link || ''}`,
+            `DESCRIPTION:مقابلة المرشح ${app.full_name} لوظيفة ${app.position || ''}\\nرابط الاجتماع: ${interview.meeting_link || ''}\\nبتوقيت الشرق الأوسط (الرياض - GMT+3)`,
             `LOCATION:${interview.meeting_link || interview.location || 'Online'}`,
             'STATUS:CONFIRMED',
             'END:VEVENT',
@@ -137,23 +146,16 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         showToast('تم تحميل ملف التقويم (.ics) للتنبيهات بنجاح.', 'success');
     };
 
-    // Calculate 25-minute interview duration from scheduled start time
+    // Calculate 25-minute interview duration from scheduled start time in Riyadh Timezone
     const getInterviewDurationInfo = (scheduledAt) => {
         if (!scheduledAt) return null;
         const start = new Date(scheduledAt);
         if (isNaN(start.getTime())) return null;
         const end = new Date(start.getTime() + 25 * 60 * 1000);
-        const formatTime = (d) => {
-            let h = d.getHours();
-            const m = String(d.getMinutes()).padStart(2, '0');
-            const period = h >= 12 ? 'م' : 'ص';
-            h = h % 12 || 12;
-            return `${h}:${m} ${period}`;
-        };
         return {
-            startText: formatTime(start),
-            endText: formatTime(end),
-            dateText: start.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }),
+            startText: formatRiyadhTime(start, isRtl),
+            endText: formatRiyadhTime(end, isRtl),
+            dateText: formatRiyadhDate(start, isRtl, { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }),
         };
     };
 
@@ -1282,11 +1284,14 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                             <div className="pt-4 border-t border-slate-100 space-y-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
-                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                                            4. {t('interviewAvailability')}
+                                        <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
+                                            <span>4. {t('interviewAvailability')}</span>
+                                            <span className="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-full lowercase tracking-normal">
+                                                توقيت الرياض (GMT+3)
+                                            </span>
                                         </h4>
                                         <p className="text-[11px] text-slate-500 mt-0.5">
-                                            {t('editApplicantSubtitle')}
+                                            حدد أوقات تفرغ المتقدم الأسبوعية بتوقيت الشرق الأوسط (الرياض / مكة المكرمة - GMT+3)
                                         </p>
                                     </div>
 
@@ -1367,7 +1372,9 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                 {!win.all_day && (
                                                     <>
                                                         <div>
-                                                            <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('fromTime')}</label>
+                                                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                                                {t('fromTime')} <span className="text-[10px] text-blue-600 font-normal">(بتوقيت الرياض)</span>
+                                                            </label>
                                                             <input
                                                                 type="time"
                                                                 value={win.from || '15:00'}
@@ -1377,7 +1384,9 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                         </div>
 
                                                         <div>
-                                                            <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('toTime')}</label>
+                                                            <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                                                {t('toTime')} <span className="text-[10px] text-blue-600 font-normal">(بتوقيت الرياض)</span>
+                                                            </label>
                                                             <input
                                                                 type="time"
                                                                 value={win.to || '18:00'}
@@ -1706,7 +1715,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                     </td>
                                                     <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
                                                         {att.uploaded_at
-                                                            ? new Date(att.uploaded_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { dateStyle: 'medium' })
+                                                            ? formatRiyadhDate(att.uploaded_at, isRtl, { dateStyle: 'medium' })
                                                             : '—'}
                                                     </td>
                                                     <td className="px-4 py-3">
@@ -2113,7 +2122,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                             }`}
                                         >
-                                            مقابلة {idx + 1} ({new Date(intv.scheduled_at).toLocaleDateString('ar-EG', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })})
+                                            مقابلة {idx + 1} ({formatRiyadhDateTime(intv.scheduled_at, isRtl, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })})
                                         </button>
                                     );
                                 })}
@@ -2132,7 +2141,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             <div>
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h4 className="text-xs font-bold text-slate-900">
-                                                        موعد المقابلة: {new Date(activeInterview.scheduled_at).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' })}
+                                                        موعد المقابلة: {formatRiyadhDateTime(activeInterview.scheduled_at, isRtl, { dateStyle: 'full', timeStyle: 'short' })} <span className="text-[11px] text-blue-700 font-semibold">(بتوقيت الرياض)</span>
                                                     </h4>
                                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                                                         activeInterview.status === 'completed'
@@ -2149,7 +2158,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                     <span>&bull;</span>
                                                     <span>النوع: <strong className="text-slate-700">{activeInterview.interview_type === 'online' ? 'عبر الإنترنت (أونلاين)' : 'حضورياً'}</strong></span>
                                                     <span>&bull;</span>
-                                                    <span>المدة: <strong className="text-emerald-700">25 دقيقة نشطة</strong> (إلى {new Date(new Date(activeInterview.scheduled_at).getTime() + 25 * 60 * 1000).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })})</span>
+                                                    <span>المدة: <strong className="text-emerald-700">25 دقيقة نشطة</strong> (إلى {formatRiyadhTime(new Date(activeInterview.scheduled_at).getTime() + 25 * 60 * 1000, isRtl)})</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2493,7 +2502,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                     </span>
                                                 </div>
                                                 <span className="text-[10px] text-slate-400 font-mono">
-                                                    {new Date(log.created_at).toLocaleString('ar-EG')}
+                                                    {formatRiyadhDateTime(log.created_at, isRtl)}
                                                 </span>
                                             </div>
 
@@ -2555,7 +2564,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                         {log.notes || `تم تغيير الحالة إلى ${t(`status_${log.to_status}`)}`}
                                     </h4>
                                     <p className="text-[11px] text-slate-400 mt-1">
-                                        المسؤول: {log.changed_by_user?.name || 'النظام'} &bull; {new Date(log.created_at).toLocaleString('ar-EG')}
+                                        المسؤول: {log.changed_by_user?.name || 'النظام'} &bull; {formatRiyadhDateTime(log.created_at, isRtl)}
                                     </p>
                                 </div>
                             ))}
@@ -2644,8 +2653,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                 <span className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
                                     <span>⚡</span> {t('candidateAvailabilitySummary')} و {t('interviewerDutyHours')}
                                 </span>
-                                <span className="text-[10px] text-blue-700 bg-blue-100/60 font-semibold px-2 py-0.5 rounded-full">
-                                    مرجع أسبوعي دوري
+                                <span className="text-[10px] text-blue-800 bg-blue-100 font-semibold px-2.5 py-0.5 rounded-full">
+                                    مرجع أسبوعي دوري (بتوقيت الرياض - GMT+3)
                                 </span>
                             </div>
 
@@ -2685,7 +2694,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                     className="w-full py-1 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
                                                 >
                                                     <span>⚡</span>
-                                                    <span>تثبيت تفرغ المتقدم (3:00 م - 6:00 م) الآن</span>
+                                                    <span>تثبيت تفرغ المتقدم (3:00 م - 6:00 م بتوقيت الرياض)</span>
                                                 </button>
                                             </div>
                                         );
@@ -2743,8 +2752,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1">
                                     {t('scheduledAt')} *
-                                    <span className="text-[11px] font-normal text-slate-500 ms-1.5">
-                                        (اختر تاريخ ووقت بدء المقابلة بحرية تامة)
+                                    <span className="text-[11px] font-semibold text-blue-700 ms-1.5">
+                                        (بتوقيت الشرق الأوسط / الرياض - GMT+3)
                                     </span>
                                 </label>
                                 <input
@@ -2767,11 +2776,11 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             <div className="flex items-center gap-2">
                                                 <span className="text-base">⏱️</span>
                                                 <div>
-                                                    <span className="font-bold">فترة المقابلة المحسوبة:</span>
+                                                    <span className="font-bold">فترة المقابلة المحسوبة (بتوقيت الرياض):</span>
                                                     <span className="mx-1.5 font-black text-emerald-800 text-[13px]">
                                                         من {info.startText} إلى {info.endText}
                                                     </span>
-                                                    <span className="text-slate-500 text-[11px] block sm:inline">
+                                                    <span className="text-slate-600 text-[11px] block sm:inline">
                                                         ({info.dateText})
                                                     </span>
                                                 </div>

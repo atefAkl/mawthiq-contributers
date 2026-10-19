@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
+import { formatRiyadhDateTime, formatUtcCalendar, RIYADH_TIMEZONE } from '../utils/date';
 
 export default function InterviewsPage({ currentRoute, navigate }) {
     const { t, isRtl } = useLanguage();
@@ -99,11 +100,10 @@ export default function InterviewsPage({ currentRoute, navigate }) {
         const title = encodeURIComponent(`مقابلة توظيف: ${applicantName} (${item.applicant?.position || 'مساهم'})`);
         const start = new Date(item.scheduled_at);
         const end = new Date(start.getTime() + 25 * 60 * 1000);
-        const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
-        const dates = `${formatUtc(start)}/${formatUtc(end)}`;
-        const details = encodeURIComponent(`مقابلة المرشح ${applicantName}\nرقم الطلب: ${item.applicant?.application_no || ''}\nرابط المقابلة: ${item.meeting_link || ''}`);
+        const dates = `${formatUtcCalendar(start)}/${formatUtcCalendar(end)}`;
+        const details = encodeURIComponent(`مقابلة المرشح ${applicantName}\nرقم الطلب: ${item.applicant?.application_no || ''}\nرابط المقابلة: ${item.meeting_link || ''}\n(الموعد بتوقيت الرياض - GMT+3)`);
         const location = encodeURIComponent(item.meeting_link || item.location || 'Online');
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}&ctz=${RIYADH_TIMEZONE}`;
     };
 
     const downloadIcs = (item) => {
@@ -111,20 +111,30 @@ export default function InterviewsPage({ currentRoute, navigate }) {
         const applicantName = item.applicant?.full_name || 'applicant';
         const start = new Date(item.scheduled_at);
         const end = new Date(start.getTime() + 25 * 60 * 1000);
-        const formatUtc = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
         const icsContent = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
             'PRODID:-//Mawthiq Contributors//Interview Scheduler//AR',
             'CALSCALE:GREGORIAN',
             'METHOD:REQUEST',
+            `X-WR-TIMEZONE:${RIYADH_TIMEZONE}`,
+            'BEGIN:VTIMEZONE',
+            `TZID:${RIYADH_TIMEZONE}`,
+            'X-LIC-LOCATION:Asia/Riyadh',
+            'BEGIN:STANDARD',
+            'TZOFFSETFROM:+0300',
+            'TZOFFSETTO:+0300',
+            'TZNAME:+03',
+            'DTSTART:19700101T000000',
+            'END:STANDARD',
+            'END:VTIMEZONE',
             'BEGIN:VEVENT',
             `UID:interview-${item.id}-${Date.now()}@mawthiq.com`,
-            `DTSTAMP:${formatUtc(new Date())}`,
-            `DTSTART:${formatUtc(start)}`,
-            `DTEND:${formatUtc(end)}`,
+            `DTSTAMP:${formatUtcCalendar(new Date())}`,
+            `DTSTART:${formatUtcCalendar(start)}`,
+            `DTEND:${formatUtcCalendar(end)}`,
             `SUMMARY:مقابلة توظيف: ${applicantName}`,
-            `DESCRIPTION:مقابلة المرشح ${applicantName}\\nرابط الاجتماع: ${item.meeting_link || ''}`,
+            `DESCRIPTION:مقابلة المرشح ${applicantName}\\nرابط الاجتماع: ${item.meeting_link || ''}\\nبتوقيت الرياض (GMT+3)`,
             `LOCATION:${item.meeting_link || item.location || 'Online'}`,
             'STATUS:CONFIRMED',
             'END:VEVENT',
@@ -300,7 +310,9 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                 <tr>
                                     <th className="px-4 py-3 text-start">{t('fullName')}</th>
                                     <th className="px-4 py-3 text-start">{t('position')}</th>
-                                    <th className="px-4 py-3 text-start">{t('scheduledAt')}</th>
+                                    <th className="px-4 py-3 text-start">
+                                        {t('scheduledAt')} <span className="text-[10px] text-blue-600 font-normal">(بتوقيت الرياض)</span>
+                                    </th>
                                     <th className="px-4 py-3 text-start">{t('interviewType')}</th>
                                     <th className="px-4 py-3 text-start">{t('assignedInterviewer')}</th>
                                     <th className="px-4 py-3 text-start">{t('overallScore')}</th>
@@ -342,7 +354,8 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 font-mono text-[11px] text-slate-500">
-                                                {new Date(item.scheduled_at).toLocaleString(isRtl ? 'ar-EG' : 'en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                                                <div>{formatRiyadhDateTime(item.scheduled_at, isRtl, { dateStyle: 'short', timeStyle: 'short' })}</div>
+                                                <div className="text-[10px] text-slate-400">بتوقيت الرياض</div>
                                             </td>
                                             <td className="px-4 py-3 text-slate-600">
                                                 {item.interview_type === 'online' ? t('interviewType_online') : t('interviewType_in_person')}

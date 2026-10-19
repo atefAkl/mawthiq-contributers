@@ -246,9 +246,12 @@ export default function ProfilePage({ currentRoute, navigate }) {
                         <div>
                             <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
                                 <span>🗓️</span> {t('interviewerWorkingHours')}
+                                <span className="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-full lowercase tracking-normal">
+                                    توقيت الرياض (GMT+3)
+                                </span>
                             </h3>
                             <p className="text-xs text-slate-500 mt-0.5">
-                                {t('interviewerWorkingHoursSubtitle')}
+                                {t('interviewerWorkingHoursSubtitle')} (بتوقيت الشرق الأوسط / الرياض - GMT+3)
                             </p>
                         </div>
 
@@ -328,7 +331,9 @@ export default function ProfilePage({ currentRoute, navigate }) {
                                     {!rule.all_day && (
                                         <>
                                             <div>
-                                                <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('fromTime')}</label>
+                                                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                                    {t('fromTime')} <span className="text-[10px] text-blue-600 font-normal">(بتوقيت الرياض)</span>
+                                                </label>
                                                 <input
                                                     type="time"
                                                     value={rule.from || '09:00'}
@@ -338,7 +343,9 @@ export default function ProfilePage({ currentRoute, navigate }) {
                                             </div>
 
                                             <div>
-                                                <label className="block text-[11px] font-bold text-slate-600 mb-1">{t('toTime')}</label>
+                                                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                                    {t('toTime')} <span className="text-[10px] text-blue-600 font-normal">(بتوقيت الرياض)</span>
+                                                </label>
                                                 <input
                                                     type="time"
                                                     value={rule.to || '17:00'}

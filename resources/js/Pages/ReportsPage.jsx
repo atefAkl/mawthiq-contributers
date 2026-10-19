@@ -5,9 +5,10 @@ import IconButton from '../components/IconButton';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
+import { formatRiyadhDate } from '../utils/date';
 
 export default function ReportsPage({ currentRoute, navigate }) {
-    const { t } = useLanguage();
+    const { t, isRtl } = useLanguage();
     const { showToast } = useToast();
 
     const [data, setData] = useState(null);
@@ -78,7 +79,7 @@ export default function ReportsPage({ currentRoute, navigate }) {
                 {/* Print Title Only */}
                 <div className="hidden print:block text-center pb-4 border-b border-slate-300">
                     <h1 className="text-2xl font-black text-slate-900">{t('appName')}</h1>
-                    <p className="text-xs text-slate-600">{t('reports')} - {new Date().toLocaleDateString('ar-EG')}</p>
+                    <p className="text-xs text-slate-600">{t('reports')} - {formatRiyadhDate(new Date(), isRtl)} (بتوقيت الرياض)</p>
                 </div>
 
                 {/* KPI Metrics Summary (4 KPI Stat Cards) */}

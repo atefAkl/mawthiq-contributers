@@ -6,9 +6,10 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
+import { formatRiyadhDate, formatRiyadhDateTime } from '../utils/date';
 
 export default function EmailsPage({ currentRoute, navigate }) {
-    const { t } = useLanguage();
+    const { t, isRtl } = useLanguage();
     const { hasPermission } = useAuth();
     const { showToast } = useToast();
 
@@ -189,7 +190,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
         if (e) e.stopPropagation();
         const targetRecipient = email.type === 'received' ? email.sender_email : email.recipient_email;
         const cleanSubject = email.subject.toLowerCase().startsWith('re:') ? email.subject : `Re: ${email.subject}`;
-        const quotedBody = `\n\n\n--- في ${new Date(email.created_at).toLocaleString('ar-EG')}، كتب ${email.sender_email} ---\n> ${email.body.replace(/\n/g, '\n> ')}`;
+        const quotedBody = `\n\n\n--- في ${formatRiyadhDateTime(email.created_at, isRtl)} (بتوقيت الرياض)، كتب ${email.sender_email} ---\n> ${email.body.replace(/\n/g, '\n> ')}`;
 
         setComposeForm({
             recipient_email: targetRecipient,
@@ -205,7 +206,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
     const handleForward = (email, e) => {
         if (e) e.stopPropagation();
         const cleanSubject = email.subject.toLowerCase().startsWith('fwd:') ? email.subject : `Fwd: ${email.subject}`;
-        const quotedBody = `\n\n\n---------- رسالة موجهة ----------\nمن: ${email.sender_email}\nالتاريخ: ${new Date(email.created_at).toLocaleString('ar-EG')}\nالموضوع: ${email.subject}\nإلى: ${email.recipient_email}\n\n${email.body}`;
+        const quotedBody = `\n\n\n---------- رسالة موجهة ----------\nمن: ${email.sender_email}\nالتاريخ: ${formatRiyadhDateTime(email.created_at, isRtl)} (بتوقيت الرياض)\nالموضوع: ${email.subject}\nإلى: ${email.recipient_email}\n\n${email.body}`;
 
         setComposeForm({
             recipient_email: '',
@@ -621,7 +622,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                             </div>
 
                                             <div className="text-end text-[11px] text-slate-400 whitespace-nowrap">
-                                                {new Date(email.created_at).toLocaleDateString('ar-EG', { dateStyle: 'medium' })}
+                                                {formatRiyadhDate(email.created_at, isRtl, { dateStyle: 'medium' })}
                                             </div>
                                         </div>
                                     </div>
@@ -697,7 +698,7 @@ export default function EmailsPage({ currentRoute, navigate }) {
                                     <span className="font-semibold text-slate-700 break-all">{viewEmail.recipient_email}</span>
                                 </div>
                                 <div className="col-span-2 pt-1 border-t border-slate-200/60 text-slate-400 text-[11px] flex justify-between">
-                                    <span>التاريخ: {new Date(viewEmail.created_at).toLocaleString('ar-EG')}</span>
+                                    <span>التاريخ: {formatRiyadhDateTime(viewEmail.created_at, isRtl)} (بتوقيت الرياض)</span>
                                     {viewEmail.applicant && (
                                         <span className="font-bold text-blue-600">
                                             المتقدم: {viewEmail.applicant.full_name} ({viewEmail.applicant.application_number})
