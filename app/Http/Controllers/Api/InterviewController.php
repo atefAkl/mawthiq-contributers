@@ -17,10 +17,14 @@ class InterviewController extends Controller
     public function index(Request $request)
     {
         // Auto-detect and transition past scheduled interviews (> 25 min window) to 'missed'
-        $pastCutoff = Carbon::now()->subMinutes(25);
-        Interview::where('status', 'scheduled')
-            ->where('scheduled_at', '<', $pastCutoff)
-            ->update(['status' => 'missed']);
+        try {
+            $pastCutoff = Carbon::now()->subMinutes(25);
+            Interview::where('status', 'scheduled')
+                ->where('scheduled_at', '<', $pastCutoff)
+                ->update(['status' => 'missed']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed auto-transitioning past scheduled interviews to missed: ' . $e->getMessage());
+        }
 
         $query = Interview::with(['applicant', 'interviewer', 'scorecardTemplate'])->orderBy('scheduled_at', 'desc');
 

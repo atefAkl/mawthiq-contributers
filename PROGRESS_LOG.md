@@ -426,3 +426,21 @@
      - اجتياز اختبارات `ScorecardTemplateTest` بنسبة 100%.
      - إتمام بناء أصول الواجهة بنجاح `npm run build`.
      - إنشاء حزمة النشر للاستضافة `mawthiq_update_deploy_a2hosting.zip` بصلاحيات Unix القياسية.
+
+---
+
+## [2026-10-20] - حل مشكلة اقتطاع حقل الحالة `status` في جدول المقابلات (Data truncated for column 'status')
+- **الفرع (Branch):** `development`
+- **تشخيص المشكلة (Root Cause):**
+  - عند استدعاء نقطة النهاية `GET /api/interviews`، يقوم النظام تلقائياً بفحص المقابلات السابقة التي تجاوزت موعدها بـ 25 دقيقة وتحويل حالتها من `scheduled` إلى `missed`.
+  - عمود `status` في جدول `interviews` كان معرّفاً في الميجريشن الأصلي كـ `ENUM('scheduled', 'completed', 'cancelled', 'rescheduled')` دون وجود قيمة `'missed'`.
+  - في بيئة MySQL (نمط `STRICT_TRANS_TABLES`)، أدى محاولة إسناد القيمة `'missed'` إلى إطلاق خطأ قاعدة البيانات الحاد: `SQLSTATE[01000]: Warning: 1265 Data truncated for column 'status' at row 1`، مما تسبب في توقف تحميل شاشة المقابلات تماماً بـ 500 Internal Server Error.
+- **ما تم إنجازه للحل الجذري والدائم:**
+  1. **حماية برمجية مرنة (Graceful Fallback & Exception Handling):**
+     - في `app/Http/Controllers/Api/InterviewController.php` (دالة `index`): تغليف استعلام التحويل التلقائي داخل كتلة `try / catch (\Throwable $e)` لمنع تعطل نقطة النهاية `index` حتى قبل تشغيل الميجريشن على بيئة الإنتاج، وتسجيل أي استثناء في الـ Log مع استمرار تحميل البيانات للمستخدم بنجاح وسلاسة.
+  2. **ترحيل قاعدة البيانات (Database Migration):**
+     - إنشاء الترحيل `2026_10_20_223000_alter_status_column_on_interviews_table.php` لتحويل عمود `status` في جدول `interviews` إلى `VARCHAR(50) NOT NULL DEFAULT 'scheduled'` بدلاً من الـ `ENUM` الجامد. هذا يحل مشكلة اقتطاع البيانات نهائياً في MySQL ويسمح بجميع الحالات الحالية والمستقبلية (`missed`، إلخ) مع الحفاظ على التحقق البرمجي الصارم من خلال Laravel.
+  3. **الاختبارات والبناء والحزم:**
+     - تشغيل واجتياز اختبارات `CountryAndInterviewTest` و `ScorecardTemplateTest` بنجاح 100%.
+     - تنفيذ بناء أصول الإنتاج `npm run build` بنجاح.
+     - إعادة إنشاء حزمة التحديث الجاهزة للرفع المباشر `mawthiq_update_deploy_a2hosting.zip` بصلاحيات Unix القياسية (`0755`/`0644`).
