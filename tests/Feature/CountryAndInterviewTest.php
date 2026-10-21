@@ -174,4 +174,30 @@ class CountryAndInterviewTest extends TestCase
             'country' => 'مصر',
         ]);
     }
+
+    public function test_authenticated_user_can_fetch_interviewers_list(): void
+    {
+        $role = \App\Models\Role::firstOrCreate(['name' => 'interviewer'], [
+            'display_name_ar' => 'محكّم ومسؤول مقابلات',
+            'display_name_en' => 'Interviewer',
+        ]);
+
+        $interviewer = User::factory()->create([
+            'name' => 'طارق مصطفى',
+            'email' => 'tarek@example.com',
+            'role_id' => $role->id,
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->user)->getJson('/api/interviews/interviewers');
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => ['id', 'name', 'email', 'role'],
+            ],
+            'interviewers',
+        ]);
+        $this->assertNotEmpty($response->json('data'));
+    }
 }
+

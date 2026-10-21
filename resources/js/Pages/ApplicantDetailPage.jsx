@@ -85,6 +85,7 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
         interview_type: 'online',
         meeting_link: '',
         location: '',
+        interviewer_id: '',
         scorecard_template_id: '',
         send_invitation_email: true,
     });
@@ -136,8 +137,9 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
     const loadUsers = async () => {
         try {
-            const res = await api.get('/users');
-            setInterviewers(res.data || []);
+            const res = await api.get('/interviews/interviewers').catch(() => api.get('/users'));
+            const list = res.data || res.users || res.interviewers || [];
+            setInterviewers(list.filter(u => u.role?.name !== 'contributor'));
         } catch (e) {}
     };
 
@@ -3021,17 +3023,34 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                     );
                                 })()}
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">{t('interviewType')}</label>
-                                <select
-                                    value={scheduleForm.interview_type}
-                                    onChange={e => setScheduleForm({ ...scheduleForm, interview_type: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
-                                >
-                                    <option value="online">أونلاين (Google Meet)</option>
-                                    <option value="in_person">حضورياً في المقر</option>
-                                    <option value="phone">هاتفياً</option>
-                                </select>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">{t('interviewType')}</label>
+                                    <select
+                                        value={scheduleForm.interview_type}
+                                        onChange={e => setScheduleForm({ ...scheduleForm, interview_type: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
+                                    >
+                                        <option value="online">أونلاين (Google Meet)</option>
+                                        <option value="in_person">حضورياً في المقر</option>
+                                        <option value="phone">هاتفياً</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">{t('assignedInterviewer')}</label>
+                                    <select
+                                        value={scheduleForm.interviewer_id || ''}
+                                        onChange={e => setScheduleForm({ ...scheduleForm, interviewer_id: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                                    >
+                                        <option value="">-- {t('assignedInterviewer')} --</option>
+                                        {interviewers.map(u => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.name} {u.role ? `(${u.role.display_name_ar ? u.role.display_name_ar.split('(')[0].trim() : (u.role.display_name_en || u.role.name)})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
                             {/* Scorecard Template Selector (ADR-010) */}
@@ -3262,7 +3281,9 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                     >
                                         <option value="">-- {t('assignedInterviewer')} --</option>
                                         {interviewers.map(u => (
-                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                            <option key={u.id} value={u.id}>
+                                                {u.name} {u.role ? `(${u.role.display_name_ar ? u.role.display_name_ar.split('(')[0].trim() : (u.role.display_name_en || u.role.name)})` : ''}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>

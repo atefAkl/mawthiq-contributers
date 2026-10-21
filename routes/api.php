@@ -78,6 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Interviews & Evaluation Results
     Route::prefix('interviews')->group(function () {
         Route::get('/', [InterviewController::class, 'index']);
+        Route::get('/interviewers', [InterviewController::class, 'getInterviewers']);
         Route::get('/available-slots', [InterviewController::class, 'getAvailableSlots']);
         Route::post('/', [InterviewController::class, 'store']);
         Route::get('/{id}', [InterviewController::class, 'show']);

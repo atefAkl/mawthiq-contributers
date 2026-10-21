@@ -16,6 +16,7 @@ class UserController extends Controller
         $roles = Role::with('permissions')->get();
 
         return response()->json([
+            'data' => $users,
             'users' => $users,
             'roles' => $roles,
         ]);

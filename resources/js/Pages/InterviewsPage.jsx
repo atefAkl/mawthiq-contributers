@@ -75,11 +75,12 @@ export default function InterviewsPage({ currentRoute, navigate }) {
 
     const loadMeta = async () => {
         try {
-            const [usersRes, scRes] = await Promise.all([
-                api.get('/users'),
+            const [interviewersRes, scRes] = await Promise.all([
+                api.get('/interviews/interviewers').catch(() => api.get('/users')),
                 api.get('/scorecard-templates'),
             ]);
-            setInterviewers(usersRes.data || []);
+            const list = interviewersRes.data || interviewersRes.users || interviewersRes.interviewers || [];
+            setInterviewers(list.filter(u => u.role?.name !== 'contributor'));
             setScorecardTemplates(scRes.data || []);
         } catch (e) {}
     };
@@ -706,7 +707,9 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                     >
                                         <option value="">-- {t('assignedInterviewer')} --</option>
                                         {interviewers.map(u => (
-                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                            <option key={u.id} value={u.id}>
+                                                {u.name} {u.role ? `(${u.role.display_name_ar ? u.role.display_name_ar.split('(')[0].trim() : (u.role.display_name_en || u.role.name)})` : ''}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>

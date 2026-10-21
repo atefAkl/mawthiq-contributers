@@ -691,4 +691,23 @@ class InterviewController extends Controller
             'total_slots' => count($slots),
         ]);
     }
+
+    /**
+     * Get list of active interviewers / evaluators for interview assignment
+     */
+    public function getInterviewers(Request $request)
+    {
+        $interviewers = \App\Models\User::with('role')
+            ->where('status', 'active')
+            ->whereHas('role', function ($q) {
+                $q->where('name', '!=', 'contributor');
+            })
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return response()->json([
+            'data' => $interviewers,
+            'interviewers' => $interviewers,
+        ]);
+    }
 }
