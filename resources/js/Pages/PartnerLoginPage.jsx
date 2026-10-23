@@ -38,6 +38,10 @@ export default function PartnerLoginPage({ navigate }) {
         try {
             const res = await api.post('/partner/send-otp', { email });
             showToast(res.message || 'تم إرسال رمز التحقق إلى بريدك.', 'success');
+            if (res.debug_otp) {
+                setOtpCode(res.debug_otp);
+                showToast(`رمز التحقق (بيئة التجربة): ${res.debug_otp}`, 'info');
+            }
             setMode(mode === 'reset_password' ? 'reset_password_verify' : 'otp_verify');
         } catch (err) {
             showToast(err.message || 'فشل إرسال رمز التحقق.', 'error');

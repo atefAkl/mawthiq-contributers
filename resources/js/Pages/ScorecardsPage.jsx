@@ -199,6 +199,17 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
             return;
         }
 
+        // Rule: Sum of checklist weights cannot be less than question max_score
+        const underweightedQ = formData.questions.find((q, i) => {
+            if (!Array.isArray(q.checklist_items) || q.checklist_items.length === 0) return false;
+            const sum = q.checklist_items.reduce((s, it) => s + (Number(it.weight) || 0), 0);
+            return sum < (Number(q.max_score) || 0);
+        });
+        if (underweightedQ) {
+            showToast(`تنبيه: السؤال "${underweightedQ.question || 'محدد'}" مجموع نقاط التحقق فيه أقل من درجة السؤال (${underweightedQ.max_score}). يجب ألا يقل مجموع النقاط عن درجة السؤال.`, 'warning');
+            return;
+        }
+
         setSaving(true);
         try {
             if (editingTemplate) {
@@ -710,10 +721,28 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                                                                         </button>
                                                                     </div>
                                                                 ))}
-                                                                <div className="flex items-center justify-between pt-1.5 text-[10px] text-slate-500 border-t border-slate-100">
-                                                                    <span>مجموع أوزان نقاط التحقق: <strong className="text-emerald-700 font-mono">{q.checklist_items.reduce((s, it) => s + (Number(it.weight) || 0), 0)}</strong></span>
-                                                                    <span>درجة السؤال القصوى: <strong className="font-mono">{q.max_score}</strong></span>
-                                                                </div>
+                                                                {(() => {
+                                                                    const sumWeights = q.checklist_items.reduce((s, it) => s + (Number(it.weight) || 0), 0);
+                                                                    const maxScore = Number(q.max_score) || 0;
+                                                                    const isUnder = sumWeights < maxScore;
+                                                                    return (
+                                                                        <div className="space-y-1 pt-1.5 border-t border-slate-100">
+                                                                            <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                                                                <span>مجموع أوزان نقاط التحقق: <strong className={isUnder ? 'text-rose-600 font-mono font-bold' : 'text-emerald-700 font-mono font-bold'}>{sumWeights}</strong></span>
+                                                                                <span>درجة السؤال القصوى: <strong className="font-mono">{maxScore}</strong></span>
+                                                                            </div>
+                                                                            {isUnder ? (
+                                                                                <div className="p-1.5 rounded bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold flex items-center gap-1">
+                                                                                    <span>⚠️ تنبيه: مجموع أوزان نقاط التحقق ({sumWeights}) أقل من درجة السؤال ({maxScore}). يجب ألا يقل مجموع النقاط عن درجة السؤال.</span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="p-1.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-medium flex items-center justify-between">
+                                                                                    <span>✓ مجموع النقاط يغطي درجة السؤال بالكامل (القاعدة: تُعتمد درجة السؤال كاملة عند زيادة مجموع النقاط).</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                             </div>
                                                         ) : (
                                                             <div className="text-[11px] text-slate-400 italic bg-white p-2 rounded border border-dashed border-slate-200 text-center">

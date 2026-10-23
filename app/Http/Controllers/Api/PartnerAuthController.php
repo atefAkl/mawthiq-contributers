@@ -173,9 +173,14 @@ class PartnerAuthController extends Controller
             Log::warning('Failed sending OTP email: ' . $e->getMessage());
         }
 
-        return response()->json([
+        $responseData = [
             'message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح.',
-        ]);
+        ];
+        if (config('app.debug') || app()->environment('local')) {
+            $responseData['debug_otp'] = $otp;
+        }
+
+        return response()->json($responseData);
     }
 
     /**

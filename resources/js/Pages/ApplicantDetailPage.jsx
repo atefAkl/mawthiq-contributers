@@ -2476,18 +2476,18 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                             )}
                                             <button
                                                 type="button"
-                                                onClick={() => setAgendaModalOpen(true)}
+                                                onClick={() => window.open(`/interviews/${activeInterview.id}/agenda-doc`, '_blank')}
                                                 className="px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                                title="عرض وطباعة وثيقة أجندة اللقاء الرسمية (4 صفحات)"
+                                                title="عرض وطباعة وثيقة أجندة اللقاء الرسمية المعتمدة (4 صفحات كاملة ومستقلة)"
                                             >
                                                 <span>📄</span>
                                                 <span>أجندة اللقاء (PDF)</span>
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => setReportModalOpen(true)}
+                                                onClick={() => window.open(`/interviews/${activeInterview.id}/report-doc`, '_blank')}
                                                 className="px-2.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
-                                                title="عرض التقرير التنفيذي وتوليد الشهادة الملكية بالذكاء الاصطناعي"
+                                                title="عرض التقرير التنفيذي والشهادة الملكية بالذكاء الاصطناعي (صفحة مستقلة للطباعة)"
                                             >
                                                 <span>⚜️</span>
                                                 <span>تقرير التقييم والشهادة الملكية (AI)</span>

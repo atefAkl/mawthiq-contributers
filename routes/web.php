@@ -34,6 +34,10 @@ Route::get('/storage/{path}', function (Request $request, string $path) {
     ]);
 })->where('path', '.*');
 
+// Standalone Printable Documents (100% Isolated Clean Print)
+Route::get('/interviews/{id}/agenda-doc', [\App\Http\Controllers\Api\InterviewController::class, 'agendaDoc']);
+Route::get('/interviews/{id}/report-doc', [\App\Http\Controllers\Api\InterviewController::class, 'reportDoc']);
+
 // Catch-all route to serve the Single Page Application (React)
 Route::get('/{any?}', function () {
     return view('app');

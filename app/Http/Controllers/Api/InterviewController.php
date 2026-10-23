@@ -458,6 +458,9 @@ class InterviewController extends Controller
                     $calculatedScore = round($ratio * $max, 2);
                 }
 
+                // Capped at max score: can exceed in weights but max awarded is full question score
+                $calculatedScore = min($max, $calculatedScore);
+
                 if (!isset($q['score']) || $q['score'] === null || $q['score'] === '') {
                     $q['score'] = $calculatedScore;
                 }
@@ -845,6 +848,85 @@ class InterviewController extends Controller
             'interview_type' => $interview->interview_type === 'online' ? 'عبر الإنترنت (Google Meet)' : 'حضورياً',
             'applicant_email' => $applicant->email ?? '',
             'applicant_phone' => $applicant->phone ?? '',
+        ]);
+    }
+
+    /**
+     * Requirement: Standalone Pristine 4-Page Meeting Agenda Document View
+     */
+    public function agendaDoc($id)
+    {
+        $interview = Interview::with(['applicant', 'interviewer'])->findOrFail($id);
+        $applicant = $interview->applicant;
+        $interviewer = $interview->interviewer;
+
+        $scheduledCarbon = $interview->scheduled_at
+            ? $interview->scheduled_at->copy()->setTimezone('Asia/Riyadh')
+            : now()->setTimezone('Asia/Riyadh');
+
+        $datetimeLocal = $scheduledCarbon->format('Y-m-d\TH:i');
+
+        return view('docs.agenda', [
+            'interview' => $interview,
+            'applicantName' => $applicant->full_name ?? 'المرشح',
+            'interviewerName' => $interviewer->name ?? 'فريق الاعتماد والتحكيم',
+            'specialty' => $applicant->position ?? 'تطوير البرمجيات',
+            'datetimeLocal' => $datetimeLocal,
+            'meetingLink' => $interview->meeting_link ?? 'https://meet.google.com/gyf-eyds-cgc',
+        ]);
+    }
+
+    /**
+     * Requirement: Standalone Pristine Evaluation Report & Royal Certificate Document View
+     */
+    public function reportDoc($id)
+    {
+        $interview = Interview::with(['applicant', 'interviewer'])->findOrFail($id);
+        $applicant = $interview->applicant;
+        $interviewer = $interview->interviewer;
+
+        if (empty($interview->ai_report)) {
+            $interview->ai_report = \App\Services\AiEvaluationService::generateReport($interview);
+            $interview->save();
+        }
+        $aiReport = $interview->ai_report;
+
+        $scheduledCarbon = $interview->scheduled_at
+            ? $interview->scheduled_at->copy()->setTimezone('Asia/Riyadh')
+            : now()->setTimezone('Asia/Riyadh');
+
+        $summary = $aiReport['executive_summary'] ?? ($interview->feedback ?? '');
+        $strengths = implode("\n• ", $aiReport['strengths'] ?? []);
+        if (!empty($strengths)) $strengths = "• " . $strengths;
+        $gaps = implode("\n• ", $aiReport['areas_for_development'] ?? []);
+        if (!empty($gaps)) $gaps = "• " . $gaps;
+
+        $goldenMessage = $aiReport['certificate_text'] ?? '';
+
+        return view('docs.report', [
+            'interview' => $interview,
+            'applicantName' => $applicant->full_name ?? 'المرشح',
+            'interviewerName' => $interviewer->name ?? 'فريق الاعتماد',
+            'specialty' => $applicant->position ?? 'استشارات التحول الرقمي وحلول المؤسسات',
+            'interviewDate' => $scheduledCarbon->format('Y-m-d'),
+            'round' => 'مقابلة تقييم واعتماد شراكة',
+            'duration' => '25 دقيقة',
+            'purpose' => 'تقييم مدى التوافق مع رؤية موثِق، واستكشاف الخبرات والدوافع والاستعداد لتحمل مسؤولية كشريك استراتيجي.',
+            'techScore' => $interview->technical_score ? ($interview->technical_score >= 8 ? '5 — متميز' : ($interview->technical_score >= 6 ? '4 — قوي' : '3 — جيد')) : '5 — متميز',
+            'businessScore' => '5 — متميز',
+            'leadershipScore' => '4 — قوي',
+            'communicationScore' => $interview->communication_score ? ($interview->communication_score >= 8 ? '5 — متميز' : '4 — قوي') : '5 — متميز',
+            'commitmentScore' => $interview->commitment_score ? ($interview->commitment_score >= 8 ? '5 — متميز' : '4 — قوي') : '5 — متميز',
+            'summary' => $summary,
+            'strengths' => $strengths,
+            'gaps' => $gaps,
+            'decision' => $interview->recommendation === 'strong_hire' ? 'قبول واعتماد شريك' : ($interview->recommendation === 'hire' ? 'قبول واعتماد' : 'استكمال التقييم'),
+            'status' => $interview->status === 'completed' ? 'مكتمل' : 'تقييم أولي — غير نهائي',
+            'rationale' => $aiReport['recommendation_text'] ?? 'الجدارة المثبتة والخبرة النوعية تمثل إضافة محورية لمنظومة الشركاء في موثِق.',
+            'followup' => 'مناقشة خطة تفعيل المشاريع الاستشارية وآلية المشاركة في العوائد.',
+            'nextSteps' => 'توقيع اتفاقية الشراكة وتحديد خطة الإطلاق المشتركة للمشاريع.',
+            'goldenMessage' => $goldenMessage,
+            'refNo' => $applicant->application_no ?? ('MQ-' . date('Y') . '-' . str_pad($applicant->id, 4, '0', STR_PAD_LEFT)),
         ]);
     }
 }
