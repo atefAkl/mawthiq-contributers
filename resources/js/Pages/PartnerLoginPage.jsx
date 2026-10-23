@@ -18,7 +18,8 @@ export default function PartnerLoginPage({ navigate }) {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await api.post('/partner/login', { email, password });
+            const res = await api.post('/partner/login', { email: email.trim(), password });
+            localStorage.setItem('token', res.token);
             localStorage.setItem('auth_token', res.token);
             localStorage.setItem('user', JSON.stringify(res.user));
             localStorage.setItem('partner_applicant', JSON.stringify(res.applicant));
@@ -36,12 +37,9 @@ export default function PartnerLoginPage({ navigate }) {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await api.post('/partner/send-otp', { email });
-            showToast(res.message || 'تم إرسال رمز التحقق إلى بريدك.', 'success');
-            if (res.debug_otp) {
-                setOtpCode(res.debug_otp);
-                showToast(`رمز التحقق (بيئة التجربة): ${res.debug_otp}`, 'info');
-            }
+            const res = await api.post('/partner/send-otp', { email: email.trim() });
+            setOtpCode(''); // Ensure empty field waiting for email OTP
+            showToast(res.message || 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح.', 'success');
             setMode(mode === 'reset_password' ? 'reset_password_verify' : 'otp_verify');
         } catch (err) {
             showToast(err.message || 'فشل إرسال رمز التحقق.', 'error');
@@ -54,7 +52,11 @@ export default function PartnerLoginPage({ navigate }) {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await api.post('/partner/verify-otp', { email, otp_code: otpCode });
+            const res = await api.post('/partner/verify-otp', {
+                email: email.trim(),
+                otp_code: otpCode.trim(),
+            });
+            localStorage.setItem('token', res.token);
             localStorage.setItem('auth_token', res.token);
             localStorage.setItem('user', JSON.stringify(res.user));
             localStorage.setItem('partner_applicant', JSON.stringify(res.applicant));
@@ -77,8 +79,8 @@ export default function PartnerLoginPage({ navigate }) {
         setLoading(true);
         try {
             const res = await api.post('/partner/reset-password', {
-                email,
-                otp_code: otpCode,
+                email: email.trim(),
+                otp_code: otpCode.trim(),
                 password: newPassword,
                 password_confirmation: newPasswordConfirmation,
             });

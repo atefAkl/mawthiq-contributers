@@ -62,9 +62,9 @@ class PartnerAuthController extends Controller
                         $applicant->email,
                         "بيانات الدخول إلى بوابة الشركاء - {$platformName}",
                         "عزيزي {$applicant->full_name}،\n\nتم تفعيل حسابك في بوابة الشركاء بنجاح.\nالبريد الإلكتروني: {$applicant->email}\nكلمة المرور المؤقتة: {$tempPass}\n\nيمكنك تسجيل الدخول وتغيير كلمة المرور في أي وقت.\nمع تحيات فريق العمل",
-                        'partner_welcome',
                         $applicant->id,
-                        null
+                        $user->id,
+                        'partner_welcome'
                     );
                 } catch (\Throwable $e) {
                     Log::warning('Failed to send partner welcome email: ' . $e->getMessage());
@@ -122,8 +122,10 @@ class PartnerAuthController extends Controller
             'email' => 'required|email',
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
-        $applicant = Applicant::where('email', $validated['email'])->first();
+        $email = strtolower(trim($validated['email']));
+
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        $applicant = Applicant::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (!$user && !$applicant) {
             return response()->json([
@@ -161,26 +163,33 @@ class PartnerAuthController extends Controller
 
         $platformName = Setting::get('platform_name', 'منصة موثِق');
         try {
-            MailService::send(
+            $mailResult = MailService::send(
                 $user->email,
                 "رمز التحقق والمصادقة (OTP) - {$platformName}",
-                "عزيزي {$user->name}،\n\nرمز التحقق الخاص بك لتسجيل الدخول إلى بوابة الشركاء هو: {$otp}\nصلاحية الرمز 15 دقيقة فقط.\nإذا لم تقم بطلب هذا الرمز، يمكنك تجاهل هذه الرسالة بأمان.\n\nمنصة موثِق",
-                'partner_otp',
+                "عزيزي {$user->name}،\n\nرمز التحقق الخاص بك لتسجيل الدخول إلى بوابة الشركاء هو: {$otp}\n\nصلاحية هذا الرمز 15 دقيقة فقط.\nإذا لم تكن قد طلبت هذا الرمز، يمكنك تجاهل هذه الرسالة بأمان.\n\nمنصة موثِق",
                 $applicant ? $applicant->id : null,
-                null
+                $user->id,
+                'partner_otp'
             );
+
+            if (!empty($mailResult) && isset($mailResult['success']) && !$mailResult['success']) {
+                Log::warning('Failed sending OTP email: ' . ($mailResult['message'] ?? 'SMTP error'));
+                return response()->json([
+                    'message' => 'تعذر إرسال رمز التحقق إلى بريدك الإلكتروني حالياً. يرجى التحقق من إعدادات خادم البريد (SMTP) أو مراجعة إدارة المنصة.',
+                    'mail_error' => $mailResult['message'] ?? null,
+                ], 500);
+            }
         } catch (\Throwable $e) {
-            Log::warning('Failed sending OTP email: ' . $e->getMessage());
+            Log::warning('Exception sending OTP email: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'حدث خطأ أثناء محاولة إرسال الرمز عبر البريد الإلكتروني.',
+                'error_detail' => $e->getMessage(),
+            ], 500);
         }
 
-        $responseData = [
+        return response()->json([
             'message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح.',
-        ];
-        if (config('app.debug') || app()->environment('local')) {
-            $responseData['debug_otp'] = $otp;
-        }
-
-        return response()->json($responseData);
+        ]);
     }
 
     /**
@@ -193,23 +202,26 @@ class PartnerAuthController extends Controller
             'otp_code' => 'required|string|size:6',
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
+        $email = strtolower(trim($validated['email']));
+        $otpCode = trim((string)$validated['otp_code']);
+
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (!$user || empty($user->otp_code)) {
             return response()->json([
-                'message' => 'لم يتم طلب رمز تحقق لهذا الحساب.',
+                'message' => 'لم يتم طلب رمز تحقق لهذا الحساب أو انتهت صلاحيته.',
             ], 422);
         }
 
-        if ($user->otp_code !== $validated['otp_code']) {
+        if (trim((string)$user->otp_code) !== $otpCode) {
             return response()->json([
-                'message' => 'رمز التحقق غير صحيح.',
+                'message' => 'رمز التحقق غير صحيح. يرجى التأكد من الرمز المدخل.',
             ], 422);
         }
 
-        if (!$user->otp_expires_at || Carbon::now()->gt($user->otp_expires_at)) {
+        if (!$user->otp_expires_at || Carbon::parse($user->otp_expires_at)->isPast()) {
             return response()->json([
-                'message' => 'انتهت صلاحية رمز التحقق. يرجى طلب رمز جديد.',
+                'message' => 'انتهت صلاحية رمز التحقق (15 دقيقة). يرجى طلب رمز جديد.',
             ], 422);
         }
 
@@ -220,7 +232,7 @@ class PartnerAuthController extends Controller
         ]);
 
         $token = $user->createToken('partner-auth-token')->plainTextToken;
-        $applicant = $user->applicant ?? Applicant::where('email', $user->email)->first();
+        $applicant = $user->applicant ?? Applicant::whereRaw('LOWER(email) = ?', [$email])->first();
 
         return response()->json([
             'message' => 'تم التحقق من الرمز بنجاح.',
@@ -246,13 +258,16 @@ class PartnerAuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
+        $email = strtolower(trim($validated['email']));
+        $otpCode = trim((string)$validated['otp_code']);
 
-        if (!$user || empty($user->otp_code) || $user->otp_code !== $validated['otp_code']) {
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if (!$user || empty($user->otp_code) || trim((string)$user->otp_code) !== $otpCode) {
             return response()->json(['message' => 'رمز التحقق غير صحيح أو غير صالح.'], 422);
         }
 
-        if (!$user->otp_expires_at || Carbon::now()->gt($user->otp_expires_at)) {
+        if (!$user->otp_expires_at || Carbon::parse($user->otp_expires_at)->isPast()) {
             return response()->json(['message' => 'انتهت صلاحية رمز التحقق. يرجى طلب رمز جديد.'], 422);
         }
 

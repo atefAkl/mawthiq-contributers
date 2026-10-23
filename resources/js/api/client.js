@@ -1,7 +1,7 @@
 const API_BASE = '/api';
 
 export async function apiRequest(endpoint, options = {}) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     const headers = {
@@ -27,10 +27,11 @@ export async function apiRequest(endpoint, options = {}) {
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, config);
 
-        if (response.status === 401 && !endpoint.includes('/auth/login')) {
+        if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/partner/')) {
             localStorage.removeItem('token');
+            localStorage.removeItem('auth_token');
             localStorage.removeItem('user');
-            if (window.location.hash !== '#/login' && !window.location.hash.startsWith('#/apply')) {
+            if (window.location.hash !== '#/login' && !window.location.hash.startsWith('#/apply') && !window.location.hash.startsWith('#/partner')) {
                 window.location.hash = '#/login';
             }
         }
