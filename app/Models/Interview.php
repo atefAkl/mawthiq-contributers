@@ -30,6 +30,7 @@ class Interview extends Model
         'max_score',
         'overall_percentage',
         'cancellation_reason',
+        'ai_report',
     ];
 
     protected $casts = [
@@ -43,6 +44,7 @@ class Interview extends Model
         'max_score' => 'float',
         'overall_percentage' => 'float',
         'questions' => 'array',
+        'ai_report' => 'array',
     ];
 
     public function applicant()

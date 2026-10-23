@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
 import { formatRiyadhDateTime, formatRiyadhDate, formatRiyadhTime, formatUtcCalendar, RIYADH_TIMEZONE } from '../utils/date';
+import InterviewReportModal from '../components/InterviewReportModal';
+import InterviewAgendaModal from '../components/InterviewAgendaModal';
 
 export default function ApplicantDetailPage({ currentRoute, navigate }) {
     const { t, isRtl } = useLanguage();
@@ -91,6 +93,8 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
     });
     const [conflictWarning, setConflictWarning] = useState(null);
     const [schedulingLoading, setSchedulingLoading] = useState(false);
+    const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [agendaModalOpen, setAgendaModalOpen] = useState(false);
 
     // Countries, Cities, and Interviewers
     const [countries, setCountries] = useState([]);
@@ -826,6 +830,42 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
 
     const handleUpdateQuestionScore = (id, score) => {
         setQuestionsList(questionsList.map(q => q.id === id ? { ...q, score: Number(score) } : q));
+    };
+
+    const handleToggleChecklistItem = (questionId, itemId) => {
+        setQuestionsList(prev => prev.map(q => {
+            if (q.id !== questionId) return q;
+            const currentChecked = Array.isArray(q.checked_items) ? q.checked_items : [];
+            const isChecked = currentChecked.includes(itemId);
+            const newChecked = isChecked 
+                ? currentChecked.filter(id => id !== itemId)
+                : [...currentChecked, itemId];
+
+            // Auto calculate question score from checklist weights
+            let newScore = q.score;
+            if (Array.isArray(q.checklist_items) && q.checklist_items.length > 0) {
+                let calc = 0;
+                let hasExplicitWeights = false;
+                q.checklist_items.forEach(it => {
+                    const w = Number(it.weight) || 0;
+                    if (w > 0) hasExplicitWeights = true;
+                    if (newChecked.includes(it.id)) {
+                        calc += w;
+                    }
+                });
+                const max = Number(q.max_score) || 10;
+                if (!hasExplicitWeights) {
+                    calc = Math.round((newChecked.length / q.checklist_items.length) * max);
+                }
+                newScore = Math.min(max, calc);
+            }
+
+            return {
+                ...q,
+                checked_items: newChecked,
+                score: newScore,
+            };
+        }));
     };
 
     const handleUpdateQuestionNotes = (id, notes) => {
@@ -2434,6 +2474,24 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                     <span>{t('cancelInterview')}</span>
                                                 </button>
                                             )}
+                                            <button
+                                                type="button"
+                                                onClick={() => setAgendaModalOpen(true)}
+                                                className="px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                                title="عرض وطباعة وثيقة أجندة اللقاء الرسمية (4 صفحات)"
+                                            >
+                                                <span>📄</span>
+                                                <span>أجندة اللقاء (PDF)</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setReportModalOpen(true)}
+                                                className="px-2.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                                                title="عرض التقرير التنفيذي وتوليد الشهادة الملكية بالذكاء الاصطناعي"
+                                            >
+                                                <span>⚜️</span>
+                                                <span>تقرير التقييم والشهادة الملكية (AI)</span>
+                                            </button>
                                             <a
                                                 href={getGoogleCalendarUrl(activeInterview, applicant)}
                                                 target="_blank"
@@ -2572,6 +2630,47 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                                                                     className="prose prose-xs max-w-none text-rose-900 leading-relaxed [&_h3]:font-bold [&_h3]:text-rose-950 [&_h4]:font-bold [&_h4]:text-rose-900 [&_ul]:list-disc [&_ul]:ps-4 [&_ol]:list-decimal [&_ol]:ps-4"
                                                                     dangerouslySetInnerHTML={{ __html: q.answer_weaknesses }}
                                                                 />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Interactive Checklist Items for Evaluation */}
+                                                        {Array.isArray(q.checklist_items) && q.checklist_items.length > 0 && (
+                                                            <div className="bg-emerald-50/50 border border-emerald-200/80 rounded-xl p-3 space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
+                                                                        <span className="w-4 h-4 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px]">☑️</span>
+                                                                        <span>عناصر الإجابة القوية (حدد ما تضمنته إجابة المرشح):</span>
+                                                                    </span>
+                                                                    <span className="text-[10px] font-bold text-emerald-700 font-mono">
+                                                                        {Array.isArray(q.checked_items) ? q.checked_items.length : 0} من {q.checklist_items.length} محقق
+                                                                    </span>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                    {q.checklist_items.map((item, itemIdx) => {
+                                                                        const isChecked = Array.isArray(q.checked_items) && q.checked_items.includes(item.id);
+                                                                        return (
+                                                                            <label
+                                                                                key={item.id || itemIdx}
+                                                                                className={`flex items-start gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all select-none ${
+                                                                                    isChecked
+                                                                                        ? 'bg-emerald-100/70 border-emerald-300 text-emerald-950 font-semibold shadow-2xs'
+                                                                                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                                                                }`}
+                                                                            >
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={isChecked}
+                                                                                    onChange={() => handleToggleChecklistItem(q.id, item.id)}
+                                                                                    className="mt-0.5 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                                                                />
+                                                                                <span className="flex-1 leading-snug">{item.text}</span>
+                                                                                <span className="text-[10px] font-mono text-emerald-700 font-bold shrink-0 bg-emerald-50 px-1 rounded">
+                                                                                    +{item.weight}
+                                                                                </span>
+                                                                            </label>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                             </div>
                                                         )}
 
@@ -3439,6 +3538,20 @@ export default function ApplicantDetailPage({ currentRoute, navigate }) {
                     </div>
                 </div>
             )}
+
+            {/* AI Executive Report & Royal Certificate Modal */}
+            <InterviewReportModal
+                isOpen={reportModalOpen}
+                interviewId={activeInterview?.id}
+                onClose={() => setReportModalOpen(false)}
+            />
+
+            {/* 4-Page Meeting Agenda Modal */}
+            <InterviewAgendaModal
+                isOpen={agendaModalOpen}
+                interviewId={activeInterview?.id}
+                onClose={() => setAgendaModalOpen(false)}
+            />
         </AppLayout>
     );
 }

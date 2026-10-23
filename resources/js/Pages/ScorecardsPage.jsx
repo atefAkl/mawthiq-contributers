@@ -30,10 +30,10 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
         description: '',
         is_active: true,
         questions: [
-            { id: 'q_1', question: '', category: 'المهارات الفنية', expected_answer: '', max_score: 25 },
-            { id: 'q_2', question: '', category: 'حل المشكلات', expected_answer: '', max_score: 25 },
-            { id: 'q_3', question: '', category: 'التواصل والعمل الجماعي', expected_answer: '', max_score: 25 },
-            { id: 'q_4', question: '', category: 'الالتزام والانضباط', expected_answer: '', max_score: 25 },
+            { id: 'q_1', question: '', category: 'المهارات الفنية', expected_answer: '', answer_weaknesses: '', max_score: 25, checklist_items: [] },
+            { id: 'q_2', question: '', category: 'حل المشكلات', expected_answer: '', answer_weaknesses: '', max_score: 25, checklist_items: [] },
+            { id: 'q_3', question: '', category: 'التواصل والعمل الجماعي', expected_answer: '', answer_weaknesses: '', max_score: 25, checklist_items: [] },
+            { id: 'q_4', question: '', category: 'الالتزام والانضباط', expected_answer: '', answer_weaknesses: '', max_score: 25, checklist_items: [] },
         ]
     });
 
@@ -64,10 +64,10 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
             description: '',
             is_active: true,
             questions: [
-                { id: 'q_' + Date.now() + '_1', question: '', category: 'المهارات الفنية', expected_answer: '', answer_weaknesses: '', max_score: 25 },
-                { id: 'q_' + Date.now() + '_2', question: '', category: 'حل المشكلات', expected_answer: '', answer_weaknesses: '', max_score: 25 },
-                { id: 'q_' + Date.now() + '_3', question: '', category: 'التواصل والعمل الجماعي', expected_answer: '', answer_weaknesses: '', max_score: 25 },
-                { id: 'q_' + Date.now() + '_4', question: '', category: 'الالتزام والانضباط', expected_answer: '', answer_weaknesses: '', max_score: 25 },
+                { id: 'q_' + Date.now() + '_1', question: '', category: 'المهارات الفنية', expected_answer: '', answer_weaknesses: '', max_score: 25, checklist_items: [] },
+                { id: 'q_' + Date.now() + '_2', question: '', category: 'حل المشكلات', expected_answer: '', answer_weaknesses: '', max_score: 25, checklist_items: [] },
+                { id: 'q_' + Date.now() + '_3', question: '', category: 'التواصل والعمل الجماعي', expected_answer: '', answer_weaknesses: '', max_score: 25, checklist_items: [] },
+                { id: 'q_' + Date.now() + '_4', question: '', category: 'الالتزام والانضباط', expected_answer: '', answer_weaknesses: '', max_score: 25, checklist_items: [] },
             ]
         });
         setModalOpen(true);
@@ -87,10 +87,11 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                     category: q.category || 'عام',
                     expected_answer: q.expected_answer || '',
                     answer_weaknesses: q.answer_weaknesses || '',
-                    max_score: Number(q.max_score) || 10
+                    max_score: Number(q.max_score) || 10,
+                    checklist_items: Array.isArray(q.checklist_items) ? q.checklist_items : []
                 }))
                 : [
-                    { id: 'q_1', question: '', category: 'عام', expected_answer: '', answer_weaknesses: '', max_score: 10 }
+                    { id: 'q_1', question: '', category: 'عام', expected_answer: '', answer_weaknesses: '', max_score: 10, checklist_items: [] }
                 ]
         });
         setModalOpen(true);
@@ -107,7 +108,8 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                     category: 'عام',
                     expected_answer: '',
                     answer_weaknesses: '',
-                    max_score: 10
+                    max_score: 10,
+                    checklist_items: []
                 }
             ]
         }));
@@ -130,6 +132,54 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
             nextQuestions[index] = {
                 ...nextQuestions[index],
                 [field]: field === 'max_score' ? (Number(value) || 0) : value
+            };
+            return { ...prev, questions: nextQuestions };
+        });
+    };
+
+    const handleAddChecklistItem = (qIdx) => {
+        setFormData(prev => {
+            const nextQuestions = [...prev.questions];
+            const currentItems = Array.isArray(nextQuestions[qIdx].checklist_items) ? nextQuestions[qIdx].checklist_items : [];
+            const newItemId = 'chk_' + Date.now() + '_' + (currentItems.length + 1);
+            const currentTotalWeight = currentItems.reduce((acc, it) => acc + (Number(it.weight) || 0), 0);
+            const remaining = Math.max(0, (Number(nextQuestions[qIdx].max_score) || 10) - currentTotalWeight);
+            const defaultWeight = remaining > 0 ? remaining : 1;
+
+            nextQuestions[qIdx] = {
+                ...nextQuestions[qIdx],
+                checklist_items: [
+                    ...currentItems,
+                    { id: newItemId, text: '', weight: defaultWeight }
+                ]
+            };
+            return { ...prev, questions: nextQuestions };
+        });
+    };
+
+    const handleRemoveChecklistItem = (qIdx, itemIdx) => {
+        setFormData(prev => {
+            const nextQuestions = [...prev.questions];
+            const currentItems = Array.isArray(nextQuestions[qIdx].checklist_items) ? nextQuestions[qIdx].checklist_items : [];
+            nextQuestions[qIdx] = {
+                ...nextQuestions[qIdx],
+                checklist_items: currentItems.filter((_, i) => i !== itemIdx)
+            };
+            return { ...prev, questions: nextQuestions };
+        });
+    };
+
+    const handleChecklistItemChange = (qIdx, itemIdx, field, val) => {
+        setFormData(prev => {
+            const nextQuestions = [...prev.questions];
+            const currentItems = [...(nextQuestions[qIdx].checklist_items || [])];
+            currentItems[itemIdx] = {
+                ...currentItems[itemIdx],
+                [field]: field === 'weight' ? (Number(val) || 0) : val
+            };
+            nextQuestions[qIdx] = {
+                ...nextQuestions[qIdx],
+                checklist_items: currentItems
             };
             return { ...prev, questions: nextQuestions };
         });
@@ -404,6 +454,20 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                                                                 />
                                                             </div>
                                                         )}
+                                                        {Array.isArray(q.checklist_items) && q.checklist_items.length > 0 && (
+                                                            <div className="mt-2 text-[11px] bg-emerald-50/60 text-emerald-900 p-2.5 rounded border border-emerald-100">
+                                                                <span className="font-bold text-emerald-800 block mb-1">☑️ عناصر التحقق المعتمدة ({q.checklist_items.length}):</span>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
+                                                                    {q.checklist_items.map((item, cIdx) => (
+                                                                        <div key={item.id || cIdx} className="flex items-center gap-1.5 bg-white/80 px-2 py-1 rounded border border-emerald-100">
+                                                                            <span className="text-emerald-600 font-bold">✓</span>
+                                                                            <span className="flex-1 truncate">{item.text || 'عنصر تحقق'}</span>
+                                                                            <span className="font-bold text-emerald-700 font-mono text-[10px]">({item.weight}د)</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -586,6 +650,76 @@ export default function ScorecardsPage({ currentRoute, navigate }) {
                                                             placeholder={t('weaknessesPlaceholder')}
                                                             minHeight="80px"
                                                         />
+                                                    </div>
+
+                                                    {/* Checklist Items for Objective Scoring & AI Analysis */}
+                                                    <div className="pt-2 border-t border-slate-200">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                                                <span className="w-4 h-4 rounded bg-emerald-50 text-emerald-700 flex items-center justify-center text-[10px]">☑️</span>
+                                                                <span>عناصر التحقق ونقاط الإجابة القوية (Checklist Items):</span>
+                                                                <span className="text-[10px] text-slate-400 font-normal">
+                                                                    (يقوم المحاور بالتأشير عليها أثناء المقابلة ويحللها الذكاء الاصطناعي)
+                                                                </span>
+                                                            </label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleAddChecklistItem(idx)}
+                                                                className="px-2 py-1 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors flex items-center gap-1 cursor-pointer"
+                                                            >
+                                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                                </svg>
+                                                                <span>إضافة نقطة تحقق</span>
+                                                            </button>
+                                                        </div>
+
+                                                        {Array.isArray(q.checklist_items) && q.checklist_items.length > 0 ? (
+                                                            <div className="space-y-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                                                                {q.checklist_items.map((item, itemIdx) => (
+                                                                    <div key={item.id || itemIdx} className="flex items-center gap-2">
+                                                                        <span className="text-emerald-600 font-bold text-xs shrink-0">✓</span>
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder={`نقطة التحقق ${itemIdx + 1} (مثلاً: أظهر فهماً عميقاً لـ ...)`}
+                                                                            value={item.text}
+                                                                            onChange={(e) => handleChecklistItemChange(idx, itemIdx, 'text', e.target.value)}
+                                                                            className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:bg-white focus:outline-none focus:border-emerald-500"
+                                                                        />
+                                                                        <div className="flex items-center gap-1 shrink-0">
+                                                                            <span className="text-[10px] text-slate-500 font-medium">الوزن:</span>
+                                                                            <input
+                                                                                type="number"
+                                                                                min="0"
+                                                                                step="0.5"
+                                                                                value={item.weight}
+                                                                                onChange={(e) => handleChecklistItemChange(idx, itemIdx, 'weight', e.target.value)}
+                                                                                className="w-14 text-center text-xs font-bold bg-slate-50 border border-slate-200 rounded px-1 py-1 focus:bg-white focus:outline-none focus:border-emerald-500"
+                                                                                title="وزن الدرجة لهذه النقطة"
+                                                                            />
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleRemoveChecklistItem(idx, itemIdx)}
+                                                                            className="text-slate-300 hover:text-rose-600 p-1 cursor-pointer shrink-0"
+                                                                            title="حذف هذه النقطة"
+                                                                        >
+                                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                                <div className="flex items-center justify-between pt-1.5 text-[10px] text-slate-500 border-t border-slate-100">
+                                                                    <span>مجموع أوزان نقاط التحقق: <strong className="text-emerald-700 font-mono">{q.checklist_items.reduce((s, it) => s + (Number(it.weight) || 0), 0)}</strong></span>
+                                                                    <span>درجة السؤال القصوى: <strong className="font-mono">{q.max_score}</strong></span>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[11px] text-slate-400 italic bg-white p-2 rounded border border-dashed border-slate-200 text-center">
+                                                                لا توجد نقاط تحقق لهذا السؤال. انقر "إضافة نقطة تحقق" لتحديد عناصر الإجابة القوية التي سيعلم عليها المقابل.
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\EmailController;
 use App\Http\Controllers\Api\InterviewController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PartnerAuthController;
 use App\Http\Controllers\Api\PublicApplyController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
@@ -21,6 +22,14 @@ use Illuminate\Support\Facades\Route;
 */
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
+});
+
+// Partner Portal Public Routes
+Route::prefix('partner')->group(function () {
+    Route::post('/login', [PartnerAuthController::class, 'login']);
+    Route::post('/send-otp', [PartnerAuthController::class, 'sendOtp']);
+    Route::post('/verify-otp', [PartnerAuthController::class, 'verifyOtp']);
+    Route::post('/reset-password', [PartnerAuthController::class, 'resetPassword']);
 });
 
 Route::prefix('public')->group(function () {
@@ -86,6 +95,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [InterviewController::class, 'destroy']);
         Route::post('/{id}/result', [InterviewController::class, 'recordResult']);
         Route::post('/{id}/questions', [InterviewController::class, 'updateQuestions']);
+        Route::post('/{id}/generate-ai-report', [InterviewController::class, 'generateAiReport']);
+        Route::get('/{id}/report-data', [InterviewController::class, 'getReportData']);
+        Route::get('/{id}/agenda-data', [InterviewController::class, 'getAgendaData']);
+    });
+
+    // Partner Portal Protected Routes
+    Route::prefix('partner')->group(function () {
+        Route::get('/profile', [PartnerAuthController::class, 'profile']);
+        Route::put('/profile', [PartnerAuthController::class, 'updateProfile']);
+        Route::get('/my-interviews', [PartnerAuthController::class, 'getMyInterviews']);
     });
 
     // Scorecard Templates

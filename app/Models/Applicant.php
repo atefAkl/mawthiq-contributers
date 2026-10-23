@@ -10,6 +10,7 @@ class Applicant extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'application_no',
         'full_name',
         'email',
@@ -106,6 +107,11 @@ class Applicant extends Model
     public function emailLogs()
     {
         return $this->hasMany(EmailLog::class)->orderBy('created_at', 'desc');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function createdByUser()

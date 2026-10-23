@@ -60,6 +60,10 @@ class ScorecardTemplateController extends Controller
             'questions.*.category' => 'nullable|string|max:100',
             'questions.*.expected_answer' => 'nullable|string|max:65000',
             'questions.*.answer_weaknesses' => 'nullable|string|max:65000',
+            'questions.*.checklist_items' => 'nullable|array',
+            'questions.*.checklist_items.*.id' => 'nullable|string',
+            'questions.*.checklist_items.*.text' => 'nullable|string|max:500',
+            'questions.*.checklist_items.*.weight' => 'nullable|numeric|min:0',
             'questions.*.max_score' => 'required|numeric|min:1|max:500',
             'is_active' => 'nullable|boolean',
         ]);
@@ -70,12 +74,27 @@ class ScorecardTemplateController extends Controller
 
         // Ensure each question has a unique ID
         $formattedQuestions = array_map(function ($q, $index) {
+            $checklist = [];
+            if (!empty($q['checklist_items']) && is_array($q['checklist_items'])) {
+                foreach ($q['checklist_items'] as $ciIndex => $ci) {
+                    $cText = is_array($ci) ? ($ci['text'] ?? '') : (string)$ci;
+                    if (trim($cText) !== '') {
+                        $checklist[] = [
+                            'id' => is_array($ci) && !empty($ci['id']) ? $ci['id'] : ('chk_' . ($index + 1) . '_' . ($ciIndex + 1)),
+                            'text' => trim($cText),
+                            'weight' => is_array($ci) && isset($ci['weight']) && $ci['weight'] !== '' ? (float)$ci['weight'] : null,
+                        ];
+                    }
+                }
+            }
+
             return [
                 'id' => $q['id'] ?? ('q_' . ($index + 1) . '_' . time()),
                 'question' => trim($q['question']),
                 'category' => !empty($q['category']) ? trim($q['category']) : 'عام',
                 'expected_answer' => $this->sanitizeRichText($q['expected_answer'] ?? ''),
                 'answer_weaknesses' => $this->sanitizeRichText($q['answer_weaknesses'] ?? ''),
+                'checklist_items' => $checklist,
                 'max_score' => (float)$q['max_score'],
             ];
         }, $validated['questions'], array_keys($validated['questions']));
@@ -120,6 +139,10 @@ class ScorecardTemplateController extends Controller
             'questions.*.category' => 'nullable|string|max:100',
             'questions.*.expected_answer' => 'nullable|string|max:65000',
             'questions.*.answer_weaknesses' => 'nullable|string|max:65000',
+            'questions.*.checklist_items' => 'nullable|array',
+            'questions.*.checklist_items.*.id' => 'nullable|string',
+            'questions.*.checklist_items.*.text' => 'nullable|string|max:500',
+            'questions.*.checklist_items.*.weight' => 'nullable|numeric|min:0',
             'questions.*.max_score' => 'required|numeric|min:1|max:500',
             'is_active' => 'nullable|boolean',
         ]);
@@ -128,12 +151,27 @@ class ScorecardTemplateController extends Controller
         $totalMaxScore = $sumMaxScores > 0 ? $sumMaxScores : ($validated['total_max_score'] ?? 100);
 
         $formattedQuestions = array_map(function ($q, $index) {
+            $checklist = [];
+            if (!empty($q['checklist_items']) && is_array($q['checklist_items'])) {
+                foreach ($q['checklist_items'] as $ciIndex => $ci) {
+                    $cText = is_array($ci) ? ($ci['text'] ?? '') : (string)$ci;
+                    if (trim($cText) !== '') {
+                        $checklist[] = [
+                            'id' => is_array($ci) && !empty($ci['id']) ? $ci['id'] : ('chk_' . ($index + 1) . '_' . ($ciIndex + 1)),
+                            'text' => trim($cText),
+                            'weight' => is_array($ci) && isset($ci['weight']) && $ci['weight'] !== '' ? (float)$ci['weight'] : null,
+                        ];
+                    }
+                }
+            }
+
             return [
                 'id' => $q['id'] ?? ('q_' . ($index + 1) . '_' . time()),
                 'question' => trim($q['question']),
                 'category' => !empty($q['category']) ? trim($q['category']) : 'عام',
                 'expected_answer' => $this->sanitizeRichText($q['expected_answer'] ?? ''),
                 'answer_weaknesses' => $this->sanitizeRichText($q['answer_weaknesses'] ?? ''),
+                'checklist_items' => $checklist,
                 'max_score' => (float)$q['max_score'],
             ];
         }, $validated['questions'], array_keys($validated['questions']));

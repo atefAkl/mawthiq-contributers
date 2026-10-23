@@ -21,11 +21,15 @@ class User extends Authenticatable
         'status',
         'locale',
         'working_hours',
+        'otp_code',
+        'otp_expires_at',
+        'must_change_password',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'otp_code',
     ];
 
     protected function casts(): array
@@ -34,6 +38,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'working_hours' => 'array',
+            'otp_expires_at' => 'datetime',
+            'must_change_password' => 'boolean',
         ];
     }
 
@@ -57,6 +63,11 @@ class User extends Authenticatable
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+
+    public function applicant()
+    {
+        return $this->hasOne(Applicant::class);
     }
 
     public function interviews()

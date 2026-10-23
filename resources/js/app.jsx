@@ -20,6 +20,8 @@ import EmailsPage from './Pages/EmailsPage';
 import UsersAndPermissionsPage from './Pages/UsersAndPermissionsPage';
 import SettingsPage from './Pages/SettingsPage';
 import ProfilePage from './Pages/ProfilePage';
+import PartnerLoginPage from './Pages/PartnerLoginPage';
+import PartnerProfilePage from './Pages/PartnerProfilePage';
 
 function Router() {
     const { isAuthenticated, loading } = useAuth();
@@ -53,9 +55,17 @@ function Router() {
         return <PublicApplyPage navigate={navigate} />;
     }
 
+    // Partner Portal Routes
+    if (route === '#/partner/login') {
+        return <PartnerLoginPage navigate={navigate} />;
+    }
+    if (route.startsWith('#/partner/profile') || route === '#/partner') {
+        return <PartnerProfilePage navigate={navigate} />;
+    }
+
     // Login Route
     if (route === '#/login' || !isAuthenticated) {
-        if (!isAuthenticated && route !== '#/login' && !route.startsWith('#/apply')) {
+        if (!isAuthenticated && route !== '#/login' && !route.startsWith('#/apply') && !route.startsWith('#/partner')) {
             window.location.hash = '#/login';
         }
         return <LoginPage navigate={navigate} />;

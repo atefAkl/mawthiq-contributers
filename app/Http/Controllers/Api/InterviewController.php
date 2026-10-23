@@ -126,6 +126,8 @@ class InterviewController extends Controller
                         'category' => $q['category'] ?? 'عام',
                         'expected_answer' => $q['expected_answer'] ?? '',
                         'answer_weaknesses' => $q['answer_weaknesses'] ?? '',
+                        'checklist_items' => $q['checklist_items'] ?? [],
+                        'checked_items' => [],
                         'max_score' => (float)($q['max_score'] ?? 10),
                         'score' => null,
                         'notes' => '',
@@ -346,6 +348,8 @@ class InterviewController extends Controller
                             'category' => $q['category'] ?? 'عام',
                             'expected_answer' => $q['expected_answer'] ?? '',
                             'answer_weaknesses' => $q['answer_weaknesses'] ?? '',
+                            'checklist_items' => $q['checklist_items'] ?? [],
+                            'checked_items' => [],
                             'max_score' => (float)($q['max_score'] ?? 10),
                             'score' => null,
                             'notes' => '',
@@ -431,15 +435,41 @@ class InterviewController extends Controller
         $sumScore = 0;
         $sumMax = 0;
         $allScored = true;
-        foreach ($validated['questions'] as $q) {
+        foreach ($validated['questions'] as &$q) {
             $max = isset($q['max_score']) && is_numeric($q['max_score']) ? (float)$q['max_score'] : 10;
             $sumMax += $max;
+
+            // Auto-calculate score from checklist items if score is null or empty
+            if (!empty($q['checklist_items']) && is_array($q['checklist_items'])) {
+                $checkedIds = $q['checked_items'] ?? [];
+                $calculatedScore = 0;
+                $hasExplicitWeights = false;
+                foreach ($q['checklist_items'] as $item) {
+                    $itemWeight = (float)($item['weight'] ?? 0);
+                    if ($itemWeight > 0) {
+                        $hasExplicitWeights = true;
+                    }
+                    if (in_array($item['id'] ?? '', $checkedIds)) {
+                        $calculatedScore += $itemWeight;
+                    }
+                }
+                if (!$hasExplicitWeights && count($q['checklist_items']) > 0) {
+                    $ratio = count($checkedIds) / count($q['checklist_items']);
+                    $calculatedScore = round($ratio * $max, 2);
+                }
+
+                if (!isset($q['score']) || $q['score'] === null || $q['score'] === '') {
+                    $q['score'] = $calculatedScore;
+                }
+            }
+
             if (isset($q['score']) && is_numeric($q['score'])) {
                 $sumScore += (float)$q['score'];
             } else {
                 $allScored = false;
             }
         }
+        unset($q);
 
         $totalScore = round($sumScore, 2);
         $maxScore = $sumMax > 0 ? round($sumMax, 2) : 100.00;
@@ -708,6 +738,113 @@ class InterviewController extends Controller
         return response()->json([
             'data' => $interviewers,
             'interviewers' => $interviewers,
+        ]);
+    }
+
+    /**
+     * Requirement: توليد تقرير المقابلة والشهادة بالذكاء الاصطناعي
+     */
+    public function generateAiReport(Request $request, $id)
+    {
+        $interview = Interview::with(['applicant', 'interviewer'])->findOrFail($id);
+
+        $aiReport = \App\Services\AiEvaluationService::generateReport($interview);
+
+        $interview->ai_report = $aiReport;
+        $interview->save();
+
+        return response()->json([
+            'message' => 'تم توليد تقرير الذكاء الاصطناعي والشهادة الملكية بنجاح.',
+            'ai_report' => $aiReport,
+            'interview' => $interview,
+        ]);
+    }
+
+    /**
+     * Requirement: استرجاع بيانات التقرير والشهادة المعتمدة لقالب interview-report.html
+     */
+    public function getReportData($id)
+    {
+        $interview = Interview::with(['applicant', 'interviewer', 'scorecardTemplate'])->findOrFail($id);
+
+        // Auto-generate AI report if not yet generated
+        if (empty($interview->ai_report)) {
+            $interview->ai_report = \App\Services\AiEvaluationService::generateReport($interview);
+            $interview->save();
+        }
+
+        $applicant = $interview->applicant;
+        $interviewer = $interview->interviewer;
+
+        $scheduledRiyadh = $interview->scheduled_at
+            ? $interview->scheduled_at->copy()->setTimezone('Asia/Riyadh')->format('Y-m-d H:i')
+            : null;
+
+        $conductedRiyadh = $interview->conducted_at
+            ? $interview->conducted_at->copy()->setTimezone('Asia/Riyadh')->format('Y-m-d H:i')
+            : ($scheduledRiyadh ?: now()->setTimezone('Asia/Riyadh')->format('Y-m-d H:i'));
+
+        return response()->json([
+            'interview' => $interview,
+            'applicant' => $applicant,
+            'interviewer' => $interviewer,
+            'ai_report' => $interview->ai_report,
+            'dates' => [
+                'scheduled_riyadh' => $scheduledRiyadh,
+                'conducted_riyadh' => $conductedRiyadh,
+                'date_arabic' => now()->setTimezone('Asia/Riyadh')->translatedFormat('d F Y'),
+            ],
+            'meta' => [
+                'platform_name' => 'منصة موثِق',
+                'slogan' => 'منظومة تمكين الشركاء والمساهمين التقنيين',
+                'certificate_title' => 'شهادة جدارة واعتماد شريك',
+            ],
+        ]);
+    }
+
+    /**
+     * Requirement: استرجاع بيانات أجندة لقاء التعارف لقالب interview-agnda.html
+     */
+    public function getAgendaData($id)
+    {
+        $interview = Interview::with(['applicant', 'interviewer'])->findOrFail($id);
+        $applicant = $interview->applicant;
+        $interviewer = $interview->interviewer;
+
+        $scheduledCarbon = $interview->scheduled_at
+            ? $interview->scheduled_at->copy()->setTimezone('Asia/Riyadh')
+            : now()->setTimezone('Asia/Riyadh');
+
+        $arabicDays = [
+            'Sunday' => 'الأحد',
+            'Monday' => 'الاثنين',
+            'Tuesday' => 'الثلاثاء',
+            'Wednesday' => 'الأربعاء',
+            'Thursday' => 'الخميس',
+            'Friday' => 'الجمعة',
+            'Saturday' => 'السبت',
+        ];
+
+        $dayNameEn = $scheduledCarbon->format('l');
+        $dayNameAr = $arabicDays[$dayNameEn] ?? $dayNameEn;
+
+        $startTimeStr = $scheduledCarbon->format('h:i') . ($scheduledCarbon->format('A') === 'AM' ? ' ص' : ' م');
+        $endTimeCarbon = $scheduledCarbon->copy()->addMinutes(25);
+        $endTimeStr = $endTimeCarbon->format('h:i') . ($endTimeCarbon->format('A') === 'AM' ? ' ص' : ' م');
+
+        return response()->json([
+            'interview_id' => $interview->id,
+            'applicant_name' => $applicant->full_name ?? 'المرشح',
+            'position' => $applicant->position ?? 'المسار التخصصي',
+            'interviewer_name' => $interviewer->name ?? 'فريق الاعتماد والتحكيم',
+            'meeting_link' => $interview->meeting_link ?? 'سيتم تزويدك به قبل اللقاء',
+            'scheduled_date' => $scheduledCarbon->format('Y-m-d'),
+            'day_name_ar' => $dayNameAr,
+            'time_window' => "{$startTimeStr} - {$endTimeStr} بتوقيت الرياض (GMT+3)",
+            'duration' => '25 دقيقة نشطة + 5 دقائق فترة انتقالية',
+            'interview_type' => $interview->interview_type === 'online' ? 'عبر الإنترنت (Google Meet)' : 'حضورياً',
+            'applicant_email' => $applicant->email ?? '',
+            'applicant_phone' => $applicant->phone ?? '',
         ]);
     }
 }

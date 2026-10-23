@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../api/client';
 import { formatRiyadhDateTime, formatUtcCalendar, formatRiyadhTime, getInterviewDurationInfo, RIYADH_TIMEZONE } from '../utils/date';
+import InterviewReportModal from '../components/InterviewReportModal';
+import InterviewAgendaModal from '../components/InterviewAgendaModal';
 
 export default function InterviewsPage({ currentRoute, navigate }) {
     const { t, isRtl } = useLanguage();
@@ -26,6 +28,9 @@ export default function InterviewsPage({ currentRoute, navigate }) {
     // Record Results Modal
     const [selectedInterview, setSelectedInterview] = useState(null);
     const [resultsModalOpen, setResultsModalOpen] = useState(false);
+    const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [agendaModalOpen, setAgendaModalOpen] = useState(false);
+    const [activeDocInterviewId, setActiveDocInterviewId] = useState(null);
     const [savingResult, setSavingResult] = useState(false);
     const [resultForm, setResultForm] = useState({
         technical_score: 8,
@@ -556,6 +561,30 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                                                          size="sm"
                                                          variant="ghost"
                                                          tooltipPosition="top"
+                                                         onClick={() => {
+                                                             setActiveDocInterviewId(item.id);
+                                                             setAgendaModalOpen(true);
+                                                         }}
+                                                         tooltip="أجندة لقاء التعارف (4 صفحات PDF)"
+                                                         className="text-blue-600 hover:bg-blue-50"
+                                                         icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                     />
+                                                     <IconButton
+                                                         size="sm"
+                                                         variant="ghost"
+                                                         tooltipPosition="top"
+                                                         onClick={() => {
+                                                             setActiveDocInterviewId(item.id);
+                                                             setReportModalOpen(true);
+                                                         }}
+                                                         tooltip="تقرير التقييم والشهادة الملكية (AI)"
+                                                         className="text-amber-600 hover:bg-amber-50"
+                                                         icon="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                                                     />
+                                                     <IconButton
+                                                         size="sm"
+                                                         variant="ghost"
+                                                         tooltipPosition="top"
                                                          onClick={() => navigate(`#/applicants/${item.applicant_id}?tab=interviews`)}
                                                          tooltip={t('viewInterviewCandidate')}
                                                          icon="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
@@ -1003,6 +1032,19 @@ export default function InterviewsPage({ currentRoute, navigate }) {
                     </div>
                 </div>
             )}
+                    {/* AI Executive Report & Royal Certificate Modal */}
+            <InterviewReportModal
+                isOpen={reportModalOpen}
+                interviewId={activeDocInterviewId}
+                onClose={() => setReportModalOpen(false)}
+            />
+
+            {/* 4-Page Meeting Agenda Modal */}
+            <InterviewAgendaModal
+                isOpen={agendaModalOpen}
+                interviewId={activeDocInterviewId}
+                onClose={() => setAgendaModalOpen(false)}
+            />
         </AppLayout>
     );
 }
