@@ -475,6 +475,48 @@ export default function SettingsPage({ currentRoute, navigate }) {
                             </div>
                         </div>
                     </div>
+
+                    {/* AI Model Settings */}
+                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                <span>🤖</span>
+                                <span>إعدادات الذكاء الاصطناعي والتقارير التنفيذية (AI Engine)</span>
+                            </h3>
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {settings.ai_api_key || settings.gemini_api_key || settings.openai_api_key ? 'مزوّد خارجي متصل' : 'المحرك الذاتي المدمج نشط (Default)'}
+                            </span>
+                        </div>
+
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                            يقوم محرك الذكاء الاصطناعي بتحليل إجابات المقابلات، فحص عناصر قوائم التحقق المحققة والمفقودة، واستخلاص نقاط القوة ومجالات التحسين وتوليد ديباجة الشهادة الملكية الرسمية.
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    مفتاح واجهة الذكاء الاصطناعي (API Key)
+                                </label>
+                                <input
+                                    type="password"
+                                    value={settings.ai_api_key || ''}
+                                    onChange={e => handleChange('ai_api_key', e.target.value)}
+                                    placeholder="sk-... أو AIzaSy..."
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono"
+                                />
+                                <span className="text-[10px] text-slate-400 mt-1 block">
+                                    يدعم النظام مفاتيح OpenAI (GPT-4o) أو Google Gemini تلقائياً.
+                                </span>
+                            </div>
+
+                            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1.5">
+                                <span className="font-bold text-slate-800 block">💡 ملاحظة حول التفعيل والبدائل:</span>
+                                <p className="text-[11px] leading-relaxed">
+                                    إذا تم ترك الحقل فارغاً، لن يتعطل النظام أبداً، بل سيتولى <strong>Mawthiq AI Core Engine</strong> تحليل النتائج واحتساب أوزان المقابلة وتوليد التقرير والشهادة الملكية بدقة 100% دون أي تكلفة إضافية.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </AppLayout>
